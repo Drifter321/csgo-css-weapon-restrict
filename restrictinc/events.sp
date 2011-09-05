@@ -272,27 +272,27 @@ GetWeaponIndex(String:weapon[100])
 	new index;
 	ReplaceString(weapon, sizeof(weapon), "weapon_", "", false);
 	//This is for shorter buy commands/ other buy commands that buy a weapon.
-	if(strncmp(weapon, "kevlar", 6, false) == 0)
+	if(StrContains(weapon, "kevlar", false) != -1)
 	{
 		found = true;
 		weapon2 = "vest";
 	}
-	else if(strncmp(weapon, "hegren", 6, false) == 0)
+	else if(StrContains(weapon, "hegren", false) != -1)
 	{
 		found = true;
 		weapon2 = "hegrenade";
 	}
-	else if(strncmp(weapon, "flash", 5, false) == 0)
+	else if(StrContains(weapon, "flash", false) != -1)
 	{
 		found = true;
 		weapon2 = "flashbang";
 	}
-	else if(strncmp(weapon, "magnum", 6, false) == 0)
+	else if(StrContains(weapon, "magnum", false) != -1)
 	{
 		found = true;
 		weapon2 = "awp";
 	}
-	else if(strncmp(weapon, "mp5", 3, false) == 0)
+	else if(StrContains(weapon, "mp5", false) != -1)
 	{
 		found = true;
 		weapon2 = "mp5navy";
@@ -310,7 +310,7 @@ GetWeaponIndex(String:weapon[100])
 	for(new i = 1; i < MAX_WEAPONS; i++)
 	{
 		new len = strlen(g_WeaponNames[i]);
-		if(strncmp(weapon, g_WeaponNames[i], len, false) == 0)
+		if(StrContains(weapon, g_WeaponNames[i], false) != -1)
 		{
 			return i;
 		}
