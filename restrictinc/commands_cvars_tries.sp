@@ -1,5 +1,5 @@
 #define MAX_WEAPONS 33
-#define PLUGIN_VERSION "2.3.5"
+#define PLUGIN_VERSION "2.3.6-beta"
 
 new Handle:WeaponTrieCT = INVALID_HANDLE;
 new Handle:WeaponTrieT = INVALID_HANDLE;
