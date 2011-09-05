@@ -309,7 +309,6 @@ GetWeaponIndex(String:weapon[100])
 	// This checks for binds like.. glock18 and only compares the first bit being glock.
 	for(new i = 1; i < MAX_WEAPONS; i++)
 	{
-		new len = strlen(g_WeaponNames[i]);
 		if(StrContains(weapon, g_WeaponNames[i], false) != -1)
 		{
 			return i;
