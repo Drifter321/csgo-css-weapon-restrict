@@ -230,18 +230,18 @@
 	{
 		"en"		"for Terrorists."
 	}
-	"ToAmmount"
+	"ToAmount"
 	{
 		"#format"	"{1:i}"
 		"en"		"to {1}"
 	}
 	"RestrictReply"
 	{
-		"en"		"sm_restrict <weapon|all|group> <ammount> <both|ct|t>"
+		"en"		"sm_restrict <weapon|all|group> <amount> <both|ct|t>"
 	}
-	"InvalidAmmount"
+	"InvalidAmount"
 	{
-		"en"		"Invalid ammount."
+		"en"		"Invalid amount."
 	}
 	"InvalidTeam"
 	{
@@ -323,9 +323,9 @@
 	{
 		"en"		"Select Item To Unrestrict"
 	}
-	"AmmountMenuTitle"
+	"AmountMenuTitle"
 	{
-		"en"		"Select Ammount"
+		"en"		"Select Amount"
 	}
 	"SelectTeamMenuTitle"
 	{
