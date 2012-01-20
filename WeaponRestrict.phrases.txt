@@ -237,7 +237,7 @@
 	}
 	"RestrictReply"
 	{
-		"en"		"sm_restrict <weapon|all> <ammount> <both|ct|t>"
+		"en"		"sm_restrict <weapon|all|group> <ammount> <both|ct|t>"
 	}
 	"InvalidAmmount"
 	{
@@ -249,7 +249,7 @@
 	}
 	"UnrestrictReply"
 	{
-		"en"		"sm_unrestrict <weapon|all> <both|ct|t>"
+		"en"		"sm_unrestrict <weapon|all|group> <both|ct|t>"
 	}
 	"ForcedBombDrop"
 	{

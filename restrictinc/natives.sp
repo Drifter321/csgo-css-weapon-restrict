@@ -1,10 +1,8 @@
 new Handle:hCanBuyForward = INVALID_HANDLE;
 new Handle:hCanPickupForward = INVALID_HANDLE;
 new Handle:hRestrictSoundForward = INVALID_HANDLE;
-#if defined WARMUP
 new Handle:hWarmupStartForward = INVALID_HANDLE;
 new Handle:hWarmupEndForward = INVALID_HANDLE;
-#endif
 #if defined PERPLAYER
 new bool:g_bOverideT[_:WeaponID];
 new bool:g_bOverideCT[_:WeaponID];

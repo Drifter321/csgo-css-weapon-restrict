@@ -217,6 +217,9 @@ public Action:ReloadRestrict(client, args)
 	CreateTimer(0.1, LateLoadExec, _, TIMER_FLAG_NO_MAPCHANGE);
 	ShowActivity2(client, ADMINCOMMANDTAG, "%t", "ReloadedRestricitions");
 	LogAction(client, -1, "\"%L\" reloaded the restrictions.", client);
+	#if defined CONFIGLOADER
+	CheckConfig();
+	#endif
 	#if defined PERPLAYER
 	PerPlayerInit();
 	CheckPerPlayer();
