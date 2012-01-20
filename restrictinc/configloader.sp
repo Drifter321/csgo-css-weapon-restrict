@@ -6,23 +6,10 @@ CheckConfig()
 	decl String:pref[10];
 	GetCurrentMap(map, sizeof(map));
 	BuildPath(Path_SM, file, sizeof(file), "configs/restrict/%s.cfg", map);
-	if(!FileExists(file))// lets try another config the map one dosnt exist.
+	if(!RunFile(file))
 	{
 		SplitString(map, "_", pref, sizeof(pref));
 		BuildPath(Path_SM, file, sizeof(file), "configs/restrict/%s_.cfg", pref);
-		if(!FileExists(file))//neither exists EXIT!
-			return;
+		RunFile(file);
 	}
-	new Handle:FileHandle = OpenFile(file, "r");
-	new String:Command[200];
-	while(!IsEndOfFile(FileHandle))
-	{
-		ReadFileLine(FileHandle, Command, sizeof(Command));
-		TrimString(Command);
-		if(strncmp(Command, "//", 2) != 0)
-		{
-			ServerCommand("%s", Command);// We can really expand on this but simple is always good..
-		}
-	}
-	CloseHandle(FileHandle);
 }

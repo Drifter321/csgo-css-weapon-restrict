@@ -1,19 +1,14 @@
-new String:g_warmupweapons[MAX_WEAPONS][100];
-new String:g_weaponwarmup[100];
-new WarmupArray;
+new WeaponID:g_iWarmupWeapon = WEAPON_NONE;
 new warmupcount;
 new ffvalue;
 
 new Handle:RespawnTimer[MAXPLAYERS+1];
+
 RegisterWarmup()
 {
 	HookEvent("player_spawn", OnPlayerSpawn);
 	HookEvent("player_death", OnPlayerDeath);
-	RegConsoleCmd("joinclass", OnJoinClass);
-}
-public OnClientDisconnect(client)
-{
-	KillRespawnTimer(client);
+	HookEvent("hegrenade_detonate", OnHegrenadeDetonate);
 }
 KillRespawnTimer(client)
 {
@@ -23,230 +18,176 @@ KillRespawnTimer(client)
 		RespawnTimer[client] = INVALID_HANDLE;
 	}
 }
-public Action:OnJoinClass(client, args)
-{
-	if(IsClientInGame(client) && GetClientTeam(client) > SPEC_TEAM && GetConVarInt(WarmupRespawn) == 1)
-		CreateTimer(3.0, RespawnFunc, client, TIMER_FLAG_NO_MAPCHANGE);
-}
-RespawnClient(client)
-{
-	RespawnTimer[client] = INVALID_HANDLE;
-	if(warmup && IsClientInGame(client) && !IsPlayerAlive(client))
-		SDKCall(roundRespawn, client);
-}
-GetWarmupWeapon()
-{
-	if(WarmupArray < 0)
-		return false;
-	new int = GetRandomInt(0, WarmupArray);
-	g_weaponwarmup = g_warmupweapons[int];
-	if(StrEqual(g_weaponwarmup, "", false))
-		return false;
-	new warm = GetConVarInt(WarmUp);
-	switch(warm)
-	{
-		case 1:
-		{
-			warmup = true;
-			return true;
-		}
-		default:
-		{
-			warmup = false;
-			return false;
-		}
-	}
-	return false;
-}
-StartWarmup()
+bool:StartWarmup()
 {
 	for(new i = 1; i <= MaxClients; i++)
 		RespawnTimer[i] = INVALID_HANDLE;
 	
-	WarmupConfigExec(true);
+	g_iWarmupWeapon = GetWarmupWeapon();
+	
+	if(g_iWarmupWeapon == WEAPON_NONE)
+		return false;
+	
+	new String:file[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, file, sizeof(file), "configs/restrict/prewarmup.cfg");
+	RunFile(file);
+	
 	StripGroundWeapons();
 	ffvalue = GetConVarInt(ffcvar);
-	if(GetConVarInt(warmupff) == 1)
+	
+	if(GetConVarBool(warmupff))
 	{
 		SetConVarInt(ffcvar, 0, true, false);
 	}
-	if(GetConVarInt(grenadegive) == 1 && StrEqual(g_weaponwarmup, "hegrenade", false))
-	{
-		grenadehooked = true;
-		HookEvent("hegrenade_detonate", HeBoom);
-	}
-	//PrintToServer("Starting warm up");
+	warmupcount = 1;
 	PrintCenterTextAll("%t", "WarmupCountdown", GetConVarInt(WarmupTime));
 	CreateTimer(1.0, WarmupCount, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
+	OnWarmupStart_Post();
+	return true;
 }
-ReadWarmup()
+WeaponID:GetWarmupWeapon()
 {
-	if(warmup)
-		return false;
-	
-	WarmupArray = -1;
-	warmupcount = 0;
-	for(new i = 0; i < MAX_WEAPONS; i++)
-	{
-		g_warmupweapons[i] = "";
-	}
-	new String:file[150];
+	decl String:file[PLATFORM_MAX_PATH];
 	BuildPath(Path_SM,file,sizeof(file),"configs/restrict/warmup.cfg");
 	if(!FileExists(file))
 	{
-		LogMessage("warmup.cfg not parsed...file doesnt exist!");
-		return false;
+		LogError("Cannot find warmup.cfg. Disabling warmup.");
+		return WEAPON_NONE;
 	}
-	new Handle:FileHandle = OpenFile(file, "r");
-	new String:weapon[100];
-	while(!IsEndOfFile(FileHandle))
+	new Handle:hFile = OpenFile(file, "r");
+	decl WeaponID:iWeaponArray[_:WeaponID];
+	new String:weapon[WEAPONARRAYSIZE];
+	new weaponcount = 0;
+	while(!IsEndOfFile(hFile))
 	{
-		ReadFileLine(FileHandle, weapon, sizeof(weapon));
-		TrimString(weapon);
+		ReadFileLine(hFile, weapon, sizeof(weapon));
 		if(strncmp(weapon, "//", 2) != 0)
 		{
-			decl slot;
-			if(GetTrieValue(WeaponSlotTrie, weapon, slot) || StrEqual(weapon, "knife", false))
-			{
-				WarmupArray++;
-				g_warmupweapons[WarmupArray] = weapon;
-			}
+			TrimString(weapon);
+			new WeaponID:id = Restrict_GetWeaponIDExtended(weapon);
+			if(id == WEAPON_NONE)
+				continue;
+			
+			new WeaponSlot:slot = GetSlotFromWeaponID(id);
+			
+			if(slot == SlotNone || slot == SlotUnknown)
+				continue;
+			
+			iWeaponArray[weaponcount] = id;
+			weaponcount++;
 		}
 	}
-	CloseHandle(FileHandle);
-	return true;
+	CloseHandle(hFile);
+	
+	if(weaponcount == 0)
+		return WEAPON_NONE;
+	
+	new index = GetRandomInt(0, weaponcount-1);
+	
+	return iWeaponArray[index];
 }
 public Action:WarmupCount(Handle:timer)
 {
 	if(GetConVarInt(WarmupTime) <= warmupcount)
 	{
-		warmup = false;
-		//PrintToServer("Warmup finished");
+		g_currentRoundSpecial = RoundType_None;
+		CreateTimer(1.1, ResetFF, _, TIMER_FLAG_NO_MAPCHANGE);
 		ServerCommand("mp_restartgame 1");
-		WarmupConfigExec(false);
-		if(grenadehooked)
-		{
-			grenadehooked = false;
-			UnhookEvent("hegrenade_detonate", HeBoom);
-		}
-		SetConVarInt(ffcvar, ffvalue, true, false);
+		
+		new String:file[PLATFORM_MAX_PATH];
+		BuildPath(Path_SM, file, sizeof(file), "configs/restrict/postwarmup.cfg");
+		RunFile(file);
+		
 		for(new i = 1; i <= MaxClients; i++)
 		{
 			if(IsClientInGame(i))
 				KillRespawnTimer(i);
 		}
+		OnWarmupEnd_Post();
 		return Plugin_Stop;
 	}
-	PrintCenterTextAll("%t", "WarmupCountdown" , GetConVarInt(WarmupTime)-warmupcount);
+	
+	PrintCenterTextAll("%t", "WarmupCountdown", GetConVarInt(WarmupTime)-warmupcount);
 	warmupcount++;
 	return Plugin_Continue;
 }
+public Action:ResetFF(Handle:timer)
+{
+	SetConVarInt(ffcvar, ffvalue, true, false);
+}
 GiveWarmupWeapon(client)
 {
-	if(!StrEqual(g_weaponwarmup, "knife", false) && IsClientInGame(client) && GetClientTeam(client) > SPEC_TEAM && warmup)
+	if(g_iWarmupWeapon != WEAPON_KNIFE && IsClientInGame(client) && GetClientTeam(client) > CS_TEAM_SPECTATOR && Restrict_IsWarmupRound())
 	{
-		new weapon;
-		weapon = GetPlayerWeaponSlot(client, 1);
-		if(weapon != -1)
+		if(GetPlayerWeaponSlot(client, _:GetSlotFromWeaponID(g_iWarmupWeapon)) == -1)// avoids giving player weapon twice for some odd reason grenade is given twice without this
 		{
-			HackWeaponRemove(weapon, 1, client);
-		}
-		weapon = GetPlayerWeaponSlot(client, 0);
-		if(weapon != -1)
-		{
-			HackWeaponRemove(weapon, 0, client);
-		}
-		decl slot;
-		GetTrieValue(WeaponSlotTrie, g_weaponwarmup, slot);
-		if(GetPlayerWeaponSlot(client, slot) == -1)// avoids giving player weapon twice for some odd reason grenade is given twice without this
-		{
-			new String:weapon2[100];
-			Format(weapon2, sizeof(weapon2), "weapon_%s", g_weaponwarmup);
+			new String:weapon2[WEAPONARRAYSIZE];
+			Format(weapon2, sizeof(weapon2), "weapon_%s", weaponNames[_:g_iWarmupWeapon]);
 			GivePlayerItem(client, weapon2);
 		}
 	}
 }
 public Action:OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	if(warmup)
+	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	RespawnTimer[client] = INVALID_HANDLE;
+	
+	if(Restrict_IsWarmupRound() && IsClientInGame(client) && GetClientTeam(client) > CS_TEAM_SPECTATOR && IsPlayerAlive(client))
 	{
-		new client = GetClientOfUserId(GetEventInt(event, "userid"));
-		RespawnTimer[client] = INVALID_HANDLE;
-		CreateTimer(0.2, SpawnWeapoDelay, client);
-	}	
-}
-public Action:SpawnWeapoDelay(Handle:timer, any:client)
-{
-	GiveWarmupWeapon(client);
+		GiveWarmupWeapon(client);
+	}
 }
 public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	if(warmup && GetConVarInt(WarmupRespawn) == 1)
+	if(Restrict_IsWarmupRound() && GetConVarInt(WarmupRespawn) == 1)
 	{
-		new client = GetClientOfUserId(GetEventInt(event, "userid"));
-		RespawnTimer[client] = CreateTimer(GetConVarFloat(WarmupRespawnTime), RespawnFunc, client, TIMER_FLAG_NO_MAPCHANGE);
-	}	
+		new userid = GetEventInt(event, "userid");
+		new client = GetClientOfUserId(userid);
+		
+		if(RespawnTimer[client] == INVALID_HANDLE)
+			RespawnTimer[client] = CreateTimer(GetConVarFloat(WarmupRespawnTime), RespawnFunc, userid, TIMER_FLAG_NO_MAPCHANGE);
+	}
 }
-public Action:HeBoom(Handle:event, const String:name[], bool:dontBroadcast)
+public Action:OnHegrenadeDetonate(Handle:event, const String:name[], bool:dontBroadcast)
 {
+	if(!Restrict_IsWarmupRound() || g_iWarmupWeapon != WEAPON_HEGRENADE || !GetConVarBool(grenadegive))
+		return Plugin_Continue;
+	
 	new client = GetClientOfUserId(GetEventInt(event,"userid"));
 	
-	if(IsClientInGame(client) && warmup && StrEqual(g_weaponwarmup, "hegrenade", false) && GetClientTeam(client) > SPEC_TEAM && IsPlayerAlive(client))
+	if(client != 0 && IsClientInGame(client) && GetClientTeam(client) > CS_TEAM_SPECTATOR && IsPlayerAlive(client))
 	{
-		if(GetPlayerWeaponSlot(client, 3) == -1)// avoids giving player a nade if they already have one (picked one up from the ground)
+		if(Restrict_GetClientGrenadeCount(client, WEAPON_HEGRENADE) <= 0)
 		{
 			new weapon = GivePlayerItem(client,"weapon_hegrenade");
 			SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", weapon);
 		}
 	}
+	
+	return Plugin_Continue;
 }
-public Action:RespawnFunc(Handle:timer, any:client)
+public Action:RespawnFunc(Handle:timer, any:userid)
 {
-	if(GetConVarInt(WarmupRespawn) == 1 && warmup && IsClientInGame(client) && !IsPlayerAlive(client))// spawn
-	{
-		RespawnClient(client);
+	new client = GetClientOfUserId(userid);
+	
+	if(client != 0)
 		RespawnTimer[client] = INVALID_HANDLE;
+		
+	if(client != 0 && GetConVarInt(WarmupRespawn) == 1 && Restrict_IsWarmupRound() && IsClientInGame(client) && !IsPlayerAlive(client) && GetClientTeam(client) >= CS_TEAM_SPECTATOR)
+	{
+		CS_RespawnPlayer(client);
 	}
 }
 StripGroundWeapons()
 {
-	for (new i = MaxClients; i < GetMaxEntities(); i++)
+	for (new i = MaxClients; i <= GetMaxEntities(); i++)
 	{
 		if (IsValidEdict(i) && IsValidEntity(i))
 		{
-			decl String:name[120];
+			decl String:name[WEAPONARRAYSIZE];
 			GetEdictClassname(i, name, sizeof(name));
-			if(strncmp(name, "weapon_", 7, false) == 0 && GetEntPropEnt(i, Prop_Data, "m_hOwnerEntity") == -1)
-				RemoveEdict(i);
+			if((strncmp(name, "weapon_", 7, false) == 0 || strncmp(name, "item_", 5, false) == 0) && Restrict_GetWeaponIDExtended(name) != WEAPON_NONE && GetEntPropEnt(i, Prop_Data, "m_hOwnerEntity") == -1)
+				AcceptEntityInput(i, "Kill");
 		}
 	}
-}
-WarmupConfigExec(bool:pre)
-{
-	new String:file[PLATFORM_MAX_PATH];
-	if(pre)
-	{
-		BuildPath(Path_SM, file, sizeof(file), "configs/restrict/prewarmup.cfg");
-	}
-	else
-	{
-		BuildPath(Path_SM, file, sizeof(file), "configs/restrict/postwarmup.cfg");
-	}
-	if(!FileExists(file))
-	{
-		LogError("%s dosnt exist", file);
-		return;
-	}
-	new Handle:FileHandle = OpenFile(file, "r");
-	new String:Command[50];
-	while(!IsEndOfFile(FileHandle))
-	{
-		ReadFileLine(FileHandle, Command, sizeof(Command));
-		TrimString(Command);
-		if(strncmp(Command, "//", 2) != 0 && strlen(Command) != 0)
-		{
-			ServerCommand("%s", Command);// We can really expand on this but simple is always good..
-		}
-	}
-	CloseHandle(FileHandle);
 }

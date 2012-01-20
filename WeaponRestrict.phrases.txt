@@ -1,0 +1,350 @@
+"Phrases"
+{
+	"deagle"
+	{
+		"en"		"Desert Eagle"
+	}
+	"glock"
+	{
+		"en"		"Glock"
+	}
+	"usp"
+	{
+		"en"		"USP"
+	}
+	"p228"
+	{
+		"en"		"P228"
+	}
+	"elite"
+	{
+		"en"		"Dual Elites"
+	}
+	"fiveseven"
+	{
+		"en"		"Five Seven"
+	}
+	"m4a1"
+	{
+		"en"		"M4A1"
+	}
+	"ak47"
+	{
+		"en"		"AK47"
+	}
+	"aug"
+	{
+		"en"		"AUG"
+	}
+	"sg552"
+	{
+		"en"		"SG552"
+	}
+	"galil"
+	{
+		"en"		"Galil"
+	}
+	"famas"
+	{
+		"en"		"Famas"
+	}
+	"scout"
+	{
+		"en"		"Scout"
+	}
+	"sg550"
+	{
+		"en"		"SG550"
+	}
+	"m249"
+	{
+		"en"		"M249"
+	}
+	"g3sg1"
+	{
+		"en"		"G3SG1"
+	}
+	"ump45"
+	{
+		"en"		"UMP 45"
+	}
+	"mp5navy"
+	{
+		"en"		"MP5 Navy"
+	}
+	"m3"
+	{
+		"en"		"M3"
+	}
+	"xm1014"
+	{
+		"en"		"XM1014"
+	}
+	"tmp"
+	{
+		"en"		"TMP"
+	}
+	"mac10"
+	{
+		"en"		"Mac 10"
+	}
+	"p90"
+	{
+		"en"		"P90"
+	}
+	"awp"
+	{
+		"en"		"AWP"
+	}
+	"smokegrenade"
+	{
+		"en"		"Smoke Grenade"
+	}
+	"hegrenade"
+	{
+		"en"		"HE Grenade"
+	}
+	"flashbang"
+	{
+		"en"		"Flashbang"
+	}
+	"c4"
+	{
+		"en"		"C4"
+	}
+	"defuser"
+	{
+		"en"		"Defuser"
+	}
+	"knife"
+	{
+		"en"		"Knife"
+	}
+	"vest"
+	{
+		"en"		"Kevlar"
+	}
+	"vesthelm"
+	{
+		"en"		"Vest and Helmet"
+	}
+	"nvgs"
+	{
+		"en"		"Nightvision"
+	}
+	"pistols"
+	{
+		"en"		"Pistols"
+	}
+	"smgs"
+	{
+		"en"		"Submachine Guns"
+	}	
+	"shotguns"
+	{
+		"en"		"Shotguns"
+	}	
+	"rifles"
+	{
+		"en"		"Rifles"
+	}	
+	"snipers"
+	{
+		"en"		"Snipers"
+	}	
+	"grenades"
+	{
+		"en"		"Grenades"
+	}
+	"armor"
+	{
+		"en"		"All Armor"
+	}
+	"AllWeapons"
+	{
+		"en"		"All Weapons"
+	}
+	"IsRestrictedBuyT"
+	{
+		"#format"	"{1:i}"
+		"en"		"is currently restricted to {1} for Terrorists and cannot be bought."	
+	}
+	"IsRestrictedBuyCT"
+	{
+		"#format"	"{1:i}"
+		"en"		"is currently restricted to {1} for Counter-Terrorists and cannot be bought."	
+	}
+	"IsRestrictedPickupT"
+	{
+		"#format"	"{1:i}"
+		"en"		"is currently restricted to {1} for Terrorists and cannot be picked up."	
+	}
+	"IsRestrictedPickupCT"
+	{
+		"#format"	"{1:i}"
+		"en"		"is currently restricted to {1} for Counter-Terrorists and cannot be picked up."	
+	}
+	"WarmupCountdown"
+	{
+		"#format"	"{1:i}"
+		"en"		"Warm up round {1} seconds left"
+	}
+	"CannotBuyWarmup"
+	{
+		"en"		"You cannot buy anything during warm up round."
+	}
+	"Refunded"
+	{
+		"#format"	"{1:i}"
+		"en"		"You have been refunded ${1} for"
+	}
+	"RemovedRestricted"
+	{
+		"en"		"Removed all restricted items."
+	}
+	"RestrictedAll"
+	{
+		"en"		"Restricted all weapons."
+	}
+	"UnrestrictedAll"
+	{
+		"en"		"Unrestricted all weapons."
+	}
+	"InvalidWeapon"
+	{
+		"en"		"Weapon/group is invalid."
+	}
+	"RestrictedCmd"
+	{
+		"en"		"Restricted"
+	}
+	"UnrestrictedCmd"
+	{
+		"en"		"Unrestricted"
+	}
+	"ForCT"
+	{
+		"en"		"for Counter-Terrorists."
+	}
+	"ForT"
+	{
+		"en"		"for Terrorists."
+	}
+	"ToAmmount"
+	{
+		"#format"	"{1:i}"
+		"en"		"to {1}"
+	}
+	"RestrictReply"
+	{
+		"en"		"sm_restrict <weapon|all> <ammount> <both|ct|t>"
+	}
+	"InvalidAmmount"
+	{
+		"en"		"Invalid ammount."
+	}
+	"InvalidTeam"
+	{
+		"en"		"Invalid team."
+	}
+	"UnrestrictReply"
+	{
+		"en"		"sm_unrestrict <weapon|all> <both|ct|t>"
+	}
+	"ForcedBombDrop"
+	{
+		"en"		"Forced the bomb to be dropped."
+	}
+	"NoOneHasBomb"
+	{
+		"en"		"No one has the bomb."
+	}
+	"SpecialRoundAlreadySet"
+	{
+		"en"		"Special round has already been set for next round."
+	}
+	"ReloadedRestricitions"
+	{
+		"en"		"Reloaded weapon restrictions."
+	}
+	"PistolRoundSetup"
+	{
+		"en"		"Setup a pistol only round next round."
+	}
+	"KnivesRoundSetup"
+	{
+		"en"		"Setup a knife only round next round."
+	}
+	"RestrictMenuMainTitle"
+	{
+		"en"		"Weapon Restrict"
+	}
+	"RestrictMenuMainOption"
+	{
+		"en"		"Weapon Restrict Commands"
+	}
+	"RestrictWeaponsOption"
+	{
+		"en"		"Restrict Weapons"
+	}
+	"UnrestrictWeaponsOption"
+	{
+		"en"		"Unrestrict Weapons"
+	}
+	"ForceBombDropOption"
+	{
+		"en"		"Force Bomb Drop"
+	}
+	"SetupKnivesOption"
+	{
+		"en"		"Setup Knives Round"
+	}
+	"SetupPistolsOption"
+	{
+		"en"		"Setup Pistols Round"
+	}
+	"RestrictionTypeMenuTitle"
+	{
+		"en"		"Select Type"
+	}
+	"TypeWeaponRestrict"
+	{
+		"en"		"By Weapon"
+	}
+	"TypeGroupRestrict"
+	{
+		"en"		"By Group"
+	}
+	"RestrictMenuTitle"
+	{
+		"en"		"Select Item To Restrict"
+	}
+	"UnrestrictMenuTitle"
+	{
+		"en"		"Select Item To Unrestrict"
+	}
+	"AmmountMenuTitle"
+	{
+		"en"		"Select Ammount"
+	}
+	"SelectTeamMenuTitle"
+	{
+		"en"		"Select Team"
+	}
+	"CounterTerrorists"
+	{
+		"en"		"Counter-Terrorists"
+	}
+	"Terrorists"
+	{
+		"en"		"Terrorists"
+	}
+	"Allteams"
+	{
+		"en"		"Both Teams"
+	}
+	"SpecialNotAllowed"
+	{
+		"en"		"is not allowed during this special round."
+	}
+}
