@@ -1,4 +1,4 @@
-new g_iMenuAmmount[MAXPLAYERS+1];
+new g_iMenuAmount[MAXPLAYERS+1];
 new WeaponID:g_iWeaponSlected[MAXPLAYERS+1];
 new WeaponType:g_iGroupSelected[MAXPLAYERS+1];
 new bool:g_bIsGroup[MAXPLAYERS+1];
@@ -71,7 +71,7 @@ public AdminMenu_Unrestrict(Handle:topmenu, TopMenuAction:action, TopMenuObject:
 		case TopMenuAction_SelectOption:
 		{
 			g_bIsUnrestrict[param] = true;
-			g_iMenuAmmount[param] = -1;
+			g_iMenuAmount[param] = -1;
 			DisplayTypeMenu(param);
 		}
 	}
@@ -189,7 +189,7 @@ public Handle_WeaponMenu(Handle:menu, MenuAction:action, param1, param2)
 			}
 			else if(!g_bIsUnrestrict[param1])
 			{
-				DisplayAmmountMenu(param1);
+				DisplayAmountMenu(param1);
 			}
 			else
 			{
@@ -206,13 +206,13 @@ public Handle_WeaponMenu(Handle:menu, MenuAction:action, param1, param2)
 		}
 	}
 }
-DisplayAmmountMenu(client)
+DisplayAmountMenu(client)
 {
-	new Handle:menu = CreateMenu(Handle_AmmountMenu);
+	new Handle:menu = CreateMenu(Handle_AmountMenu);
 	
 	decl String:title[64];
 	
-	Format(title, sizeof(title), "%T", "AmmountMenuTitle", client);
+	Format(title, sizeof(title), "%T", "AmountMenuTitle", client);
 
 	SetMenuTitle(menu, title);
 	SetMenuExitBackButton(menu, true);
@@ -257,7 +257,7 @@ public Handle_TeamMenu(Handle:menu, MenuAction:action, param1, param2)
 			if(param2 == MenuCancel_ExitBack && hAdminMenu != INVALID_HANDLE)
 			{
 				if(!g_bIsUnrestrict[param1])
-					DisplayAmmountMenu(param1);
+					DisplayAmountMenu(param1);
 				else
 					DisplayRestrictMenu(param1);
 			}
@@ -268,13 +268,13 @@ public Handle_TeamMenu(Handle:menu, MenuAction:action, param1, param2)
 			GetMenuItem(menu, param2, sTeam, sizeof(sTeam));
 			new team = StringToInt(sTeam);
 			if(!g_bIsGroup[param1])
-				HandleMenuRestriction(param1, g_iWeaponSlected[param1], g_iMenuAmmount[param1], team);
+				HandleMenuRestriction(param1, g_iWeaponSlected[param1], g_iMenuAmount[param1], team);
 			else
-				HandleMenuGroupRestriction(param1, g_iGroupSelected[param1], g_iMenuAmmount[param1], team);
+				HandleMenuGroupRestriction(param1, g_iGroupSelected[param1], g_iMenuAmount[param1], team);
 		}
 	}
 }
-public Handle_AmmountMenu(Handle:menu, MenuAction:action, param1, param2)
+public Handle_AmountMenu(Handle:menu, MenuAction:action, param1, param2)
 {
 	switch(action)
 	{
@@ -287,60 +287,60 @@ public Handle_AmmountMenu(Handle:menu, MenuAction:action, param1, param2)
 		}
 		case MenuAction_Select:
 		{
-			decl String:ammount[10];
-			GetMenuItem(menu, param2, ammount, sizeof(ammount));
-			g_iMenuAmmount[param1] = StringToInt(ammount);
+			decl String:amount[10];
+			GetMenuItem(menu, param2, amount, sizeof(amount));
+			g_iMenuAmount[param1] = StringToInt(amount);
 			switch(g_iWeaponSlected[param1])
 			{
 				case WEAPON_C4:
-					HandleMenuRestriction(param1, WEAPON_C4, g_iMenuAmmount[param1], CS_TEAM_T);
+					HandleMenuRestriction(param1, WEAPON_C4, g_iMenuAmount[param1], CS_TEAM_T);
 				case WEAPON_DEFUSER:
-					HandleMenuRestriction(param1, WEAPON_DEFUSER, g_iMenuAmmount[param1], CS_TEAM_CT);
+					HandleMenuRestriction(param1, WEAPON_DEFUSER, g_iMenuAmount[param1], CS_TEAM_CT);
 				default:
 					DisplayTeamMenu(param1);
 			}
 		}
 	}
 }
-stock HandleMenuRestriction(client, WeaponID:id, ammount, team)
+stock HandleMenuRestriction(client, WeaponID:id, amount, team)
 {
-	if(ammount != -1)
+	if(amount != -1)
 	{
 		if(team == 3 || team == 0)
 		{
-			Restrict_SetRestriction(id, CS_TEAM_CT, ammount, true);
-			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", weaponNames[_:id], "ToAmmount", ammount, "ForCT");
+			Restrict_SetRestriction(id, CS_TEAM_CT, amount, true);
+			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", weaponNames[_:id], "ToAmount", amount, "ForCT");
 		}
 		if(team == 2 || team == 0)
 		{
-			Restrict_SetRestriction(id, CS_TEAM_T, ammount, true);
-			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", weaponNames[_:id], "ToAmmount", ammount, "ForT");
+			Restrict_SetRestriction(id, CS_TEAM_T, amount, true);
+			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", weaponNames[_:id], "ToAmount", amount, "ForT");
 		}
 	}
 	else
 	{
 		if(team == 3 || team == 0)
 		{
-			Restrict_SetRestriction(id, CS_TEAM_CT, ammount, true);
+			Restrict_SetRestriction(id, CS_TEAM_CT, amount, true);
 			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", weaponNames[_:id], "ForCT");
 		}
 		if(team == 2 || team == 0)
 		{
-			Restrict_SetRestriction(id, CS_TEAM_T, ammount, true);
+			Restrict_SetRestriction(id, CS_TEAM_T, amount, true);
 			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", weaponNames[_:id], "ForT");
 		}
 	}
 }
-stock HandleMenuGroupRestriction(client, WeaponType:group, ammount, team)
+stock HandleMenuGroupRestriction(client, WeaponType:group, amount, team)
 {
 	if(group == WeaponTypeNone)
 	{
 		for(new i = 1; i < _:WeaponID; i++)
 		{
-			Restrict_SetRestriction(WeaponID:i, CS_TEAM_CT, ammount, true);
-			Restrict_SetRestriction(WeaponID:i, CS_TEAM_T, ammount, true);
+			Restrict_SetRestriction(WeaponID:i, CS_TEAM_CT, amount, true);
+			Restrict_SetRestriction(WeaponID:i, CS_TEAM_T, amount, true);
 		}
-		if(ammount != -1)
+		if(amount != -1)
 		{
 			ShowActivity2(client, ADMINCOMMANDTAG, "%t", "RestrictedAll");
 		}
@@ -350,29 +350,29 @@ stock HandleMenuGroupRestriction(client, WeaponType:group, ammount, team)
 		}
 		return;
 	}
-	if(ammount != -1)
+	if(amount != -1)
 	{
 		if(team == 3 || team == 0)
 		{
-			Restrict_SetGroupRestriction(group, CS_TEAM_CT, ammount, true);
-			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", g_WeaponGroupNames[_:group], "ToAmmount", ammount, "ForCT");
+			Restrict_SetGroupRestriction(group, CS_TEAM_CT, amount, true);
+			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", g_WeaponGroupNames[_:group], "ToAmount", amount, "ForCT");
 		}
 		if(team == 2 || team == 0)
 		{
-			Restrict_SetGroupRestriction(group, CS_TEAM_T, ammount, true);
-			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", g_WeaponGroupNames[_:group], "ToAmmount", ammount, "ForT");
+			Restrict_SetGroupRestriction(group, CS_TEAM_T, amount, true);
+			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", g_WeaponGroupNames[_:group], "ToAmount", amount, "ForT");
 		}
 	}
 	else
 	{
 		if(team == 3 || team == 0)
 		{
-			Restrict_SetGroupRestriction(group, CS_TEAM_CT, ammount, true);
+			Restrict_SetGroupRestriction(group, CS_TEAM_CT, amount, true);
 			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", g_WeaponGroupNames[_:group], "ForCT");
 		}
 		if(team == 2 || team == 0)
 		{
-			Restrict_SetGroupRestriction(group, CS_TEAM_T, ammount, true);
+			Restrict_SetGroupRestriction(group, CS_TEAM_T, amount, true);
 			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", g_WeaponGroupNames[_:group], "ForT");
 		}
 	}

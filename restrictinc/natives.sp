@@ -444,10 +444,10 @@ public Native_CanBuyWeapon(Handle:hPlugin, iNumParams)
 		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
 	}
 	new CanBuyResult:result = CanBuy_Block;
-	new maxammount = Restrict_GetRestrictValue(team, id);
+	new maxamount = Restrict_GetRestrictValue(team, id);
 	if(!Restrict_IsSpecialRound())
 	{
-		if(maxammount == -1 || Restrict_ImmunityCheck(client) || (Restrict_GetTeamWeaponCount(team, id) < maxammount))
+		if(maxamount == -1 || Restrict_ImmunityCheck(client) || (Restrict_GetTeamWeaponCount(team, id) < maxamount))
 			result = CanBuy_Allow;
 	}
 	else if(Restrict_AllowedForSpecialRound(id))
@@ -462,7 +462,7 @@ public Native_CanBuyWeapon(Handle:hPlugin, iNumParams)
 		if((g_currentRoundSpecial == RoundType_Pistol && slot == SlotPistol) || (g_currentRoundSpecial == RoundType_Knife && slot == SlotKnife))
 		#endif
 			result = CanBuy_Allow;
-		else if(maxammount == -1 || Restrict_ImmunityCheck(client) || (Restrict_GetTeamWeaponCount(team, id) < maxammount))
+		else if(maxamount == -1 || Restrict_ImmunityCheck(client) || (Restrict_GetTeamWeaponCount(team, id) < maxamount))
 			result = CanBuy_Allow;
 	}
 	if(!blockhook)
@@ -591,7 +591,7 @@ public Native_SetRestriction(Handle:hPlugin, iNumParams)
 {
 	new WeaponID:id = GetNativeCell(1);
 	new team = GetNativeCell(2);
-	new ammount = GetNativeCell(3);
+	new amount = GetNativeCell(3);
 	#if defined PERPLAYER //avoid warnings this is only needed if perplayer is compiled in.
 	new bool:override = GetNativeCell(4);
 	#endif
@@ -603,8 +603,8 @@ public Native_SetRestriction(Handle:hPlugin, iNumParams)
 	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
 	}
-	if(ammount < -1)
-		ammount = -1;
+	if(amount < -1)
+		amount = -1;
 	new arraycell = -1;
 	if(team == CS_TEAM_T && id != WEAPON_DEFUSER)
 	{
@@ -612,7 +612,7 @@ public Native_SetRestriction(Handle:hPlugin, iNumParams)
 		if(arraycell == -1)
 			return false;
 		
-		SetConVarInt(hRestrictCVarsT[arraycell], ammount, true, false);
+		SetConVarInt(hRestrictCVarsT[arraycell], amount, true, false);
 	}
 	else if(team == CS_TEAM_CT && id != WEAPON_C4)
 	{
@@ -620,7 +620,7 @@ public Native_SetRestriction(Handle:hPlugin, iNumParams)
 		if(arraycell == -1)
 			return false;
 		
-		SetConVarInt(hRestrictCVarsCT[arraycell], ammount, true, false);
+		SetConVarInt(hRestrictCVarsCT[arraycell], amount, true, false);
 	}
 	#if defined PERPLAYER
 	if(override)
@@ -634,7 +634,7 @@ public Native_SetGroupRestriction(Handle:hPlugin, iNumParams)
 {
 	new WeaponType:group = GetNativeCell(1);
 	new team = GetNativeCell(2);
-	new ammount = GetNativeCell(3);
+	new amount = GetNativeCell(3);
 	new bool:override = GetNativeCell(4);
 	if(!IsValidTeam(team))
 	{
@@ -647,7 +647,7 @@ public Native_SetGroupRestriction(Handle:hPlugin, iNumParams)
 	for(new i = 1; i < _:WeaponID; i++)
 	{
 		if(group == GetWeaponTypeFromID(WeaponID:i))
-			Restrict_SetRestriction(WeaponID:i, team, ammount, override);
+			Restrict_SetRestriction(WeaponID:i, team, amount, override);
 	}
 	return true;
 }

@@ -77,9 +77,9 @@ forward Restrict_OnWarmupEnd_Post();
 native Restrict_RefundMoney(client, WeaponID:id);
 
 /**
- * Removes x (count) ammount of a certain weapon on a team 
+ * Removes x (count) amount of a certain weapon on a team 
  * 
- * @param	count		Ammount to remove
+ * @param	count		Amount to remove
  * @param	team		Team index
  * @param	id			Weapon id to remove
  * 
@@ -210,28 +210,28 @@ native bool:Restrict_HasSpecialItem(client, WeaponID:id);
  * 
  * @param	id			Weapon id
  * @param	team		Team index
- * @param	ammount		Value to set restriction at
+ * @param	amount		Value to set restriction at
  * @param	override	True to add weapon to override
  * 
  * @error	Invalid id or invalid team.
  * @return 	true if restriction was applied false otherwise
  * @note	This will return false only if the Weapon id is invalid for the team
  */
-native bool:Restrict_SetRestriction(WeaponID:id, team, ammount, bool:override = true);
+native bool:Restrict_SetRestriction(WeaponID:id, team, amount, bool:override = true);
 
 /**
  * Sets a group restriction for specified team
  * 
  * @param	group		Weapon group
  * @param	team		Team index
- * @param	ammount		Value to set restriction at
+ * @param	amount		Value to set restriction at
  * @param	override	True to add weapon's to override
  * 
  * @error	Invalid group or invalid team.
  * @return 	true if restrictions were applied false otherwise
  * @note	Should never return false
  */
-native bool:Restrict_SetGroupRestriction(WeaponType:group, team, ammount, bool:override = true);
+native bool:Restrict_SetGroupRestriction(WeaponType:group, team, amount, bool:override = true);
 
 /**
  * Returns the round type

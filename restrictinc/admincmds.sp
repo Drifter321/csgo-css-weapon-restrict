@@ -15,16 +15,16 @@ public Action:RemoveRestricted(client, args)
 	Restrict_CheckPlayerWeapons();
 	return Plugin_Handled;
 }
-stock bool:HandleRestrictionCommand(client, String:weapon[], team=0, ammount=-1, bool:shouldbeall = false)
+stock bool:HandleRestrictionCommand(client, String:weapon[], team=0, amount=-1, bool:shouldbeall = false)
 {
 	if(StrEqual(weapon, "@all", false) || StrEqual(weapon, "all", false))
 	{
 		for(new i = 1; i < _:WeaponID; i++)
 		{
-			Restrict_SetRestriction(WeaponID:i, CS_TEAM_CT, ammount, true);
-			Restrict_SetRestriction(WeaponID:i, CS_TEAM_T, ammount, true);
+			Restrict_SetRestriction(WeaponID:i, CS_TEAM_CT, amount, true);
+			Restrict_SetRestriction(WeaponID:i, CS_TEAM_T, amount, true);
 		}
-		if(ammount != -1)
+		if(amount != -1)
 		{
 			ShowActivity2(client, ADMINCOMMANDTAG, "%t", "RestrictedAll");
 		}
@@ -48,37 +48,37 @@ stock bool:HandleRestrictionCommand(client, String:weapon[], team=0, ammount=-1,
 			ReplyToCommand(client, "%T", "InvalidWeapon", client);
 			return false;
 		}
-		if(ammount != -1)
+		if(amount != -1)
 		{
 			if(team == 3 || team == 0)
 			{
-				if(group == WeaponTypeNone && Restrict_SetRestriction(id, CS_TEAM_CT, ammount, true))
-					ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", weaponNames[_:id], "ToAmmount", ammount, "ForCT");
-				else if(id == WEAPON_NONE && Restrict_SetGroupRestriction(group, CS_TEAM_CT, ammount, true))
-					ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", g_WeaponGroupNames[_:group], "ToAmmount", ammount, "ForCT");
+				if(group == WeaponTypeNone && Restrict_SetRestriction(id, CS_TEAM_CT, amount, true))
+					ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", weaponNames[_:id], "ToAmount", amount, "ForCT");
+				else if(id == WEAPON_NONE && Restrict_SetGroupRestriction(group, CS_TEAM_CT, amount, true))
+					ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", g_WeaponGroupNames[_:group], "ToAmount", amount, "ForCT");
 			}
 			if(team == 2 || team == 0)
 			{
-				if(group == WeaponTypeNone && Restrict_SetRestriction(id, CS_TEAM_T, ammount, true))
-					ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", weaponNames[_:id], "ToAmmount", ammount, "ForT");
-				else if(id == WEAPON_NONE && Restrict_SetGroupRestriction(group, CS_TEAM_T, ammount, true))
-					ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", g_WeaponGroupNames[_:group], "ToAmmount", ammount, "ForT");
+				if(group == WeaponTypeNone && Restrict_SetRestriction(id, CS_TEAM_T, amount, true))
+					ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", weaponNames[_:id], "ToAmount", amount, "ForT");
+				else if(id == WEAPON_NONE && Restrict_SetGroupRestriction(group, CS_TEAM_T, amount, true))
+					ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", g_WeaponGroupNames[_:group], "ToAmount", amount, "ForT");
 			}
 		}
 		else
 		{
 			if(team == 3 || team == 0)
 			{
-				if(group == WeaponTypeNone && Restrict_SetRestriction(id, CS_TEAM_CT, ammount, true))
+				if(group == WeaponTypeNone && Restrict_SetRestriction(id, CS_TEAM_CT, amount, true))
 					ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", weaponNames[_:id], "ForCT");
-				else if(id == WEAPON_NONE && Restrict_SetGroupRestriction(group, CS_TEAM_CT, ammount, true))
+				else if(id == WEAPON_NONE && Restrict_SetGroupRestriction(group, CS_TEAM_CT, amount, true))
 					ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", g_WeaponGroupNames[_:group], "ForCT");
 			}
 			if(team == 2 || team == 0)
 			{
-				if(group == WeaponTypeNone && Restrict_SetRestriction(id, CS_TEAM_T, ammount, true))
+				if(group == WeaponTypeNone && Restrict_SetRestriction(id, CS_TEAM_T, amount, true))
 					ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", weaponNames[_:id], "ForT");
-				else if(id == WEAPON_NONE && Restrict_SetGroupRestriction(group, CS_TEAM_T, ammount, true))
+				else if(id == WEAPON_NONE && Restrict_SetGroupRestriction(group, CS_TEAM_T, amount, true))
 					ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", g_WeaponGroupNames[_:group], "ForT");
 			}
 		}
@@ -101,15 +101,15 @@ public Action:RestrictAdminCmd(client, args)
 			ReplyToCommand(client, "\x04[SM] %T", "RestrictReply", client);
 		return Plugin_Handled;
 	}
-	new ammount = 0;
+	new amount = 0;
 	if(args >= 2)
 	{
-		decl String:ammountString[5];
-		GetCmdArg(2, ammountString, sizeof(ammountString));
-		ammount = StringToInt(ammountString);
-		if((ammount == 0 && !StrEqual(ammountString, "0")) || ammount < -1)
+		decl String:amountString[5];
+		GetCmdArg(2, amountString, sizeof(amountString));
+		amount = StringToInt(amountString);
+		if((amount == 0 && !StrEqual(amountString, "0")) || amount < -1)
 		{
-			ReplyToCommand(client, "\x04[SM] %T", "InvalidAmmount", client);
+			ReplyToCommand(client, "\x04[SM] %T", "InvalidAmount", client);
 			return Plugin_Handled;
 		}
 	}
@@ -130,7 +130,7 @@ public Action:RestrictAdminCmd(client, args)
 			return Plugin_Handled;
 		}
 	}
-	HandleRestrictionCommand(client, weapon, teams, ammount, false);
+	HandleRestrictionCommand(client, weapon, teams, amount, false);
 	return Plugin_Handled;
 }
 public Action:UnrestrictAdminCmd(client, args)
