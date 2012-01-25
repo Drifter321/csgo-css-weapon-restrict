@@ -64,10 +64,28 @@ public OnEntityDestroyed(entity)
 }
 stock WeaponID:GetWeaponIDFromEnt(entity)
 {
+	if(!IsValidEdict(entity))
+		return WEAPON_NONE;
+	
 	new index = FindValueInArray(hWeaponEntityArray, entity);
 	if(index != -1)
 	{
 		return GetArrayCell(hWeaponsIDArray, index);
+	}
+	//Just incase code
+	new String:classname[WEAPONARRAYSIZE];
+	GetEdictClassname(entity, classname, sizeof(classname));
+	if(StrContains(classname, "weapon_", false) != -1 || StrContains(classname, "item_", false) != -1)
+	{
+		new WeaponID:id = GetWeaponID(classname);
+		
+		if(id == WEAPON_NONE)
+			return WEAPON_NONE;
+		
+		PushArrayCell(hWeaponsIDArray, _:id);
+		PushArrayCell(hWeaponEntityArray, entity);
+		
+		return id;
 	}
 	
 	return WEAPON_NONE;

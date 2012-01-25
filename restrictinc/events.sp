@@ -5,6 +5,7 @@ HookEvents()
 {
 	AddCommandListener(OnJoinClass, "joinclass");
 	HookEvent("round_start", EventRoundStart);
+	HookEvent("round_end", EventRoundEnd);
 }
 public Action:OnJoinClass(client, const String:command[], args) 
 {
@@ -38,12 +39,18 @@ public OnClientDisconnect(client)
 }
 public Action:OnWeaponCanUse(client, weapon)
 {
+	if(!IsClientInGame(client))
+		return Plugin_Continue;
+	
 	new team = GetClientTeam(client);
 	
 	if(team <= CS_TEAM_SPECTATOR)
 		return Plugin_Continue;
-	
+
 	new WeaponID:id = GetWeaponIDFromEnt(weapon);
+	
+	if(id == WEAPON_NONE)
+		return Plugin_Continue;
 	
 	#if defined WARMUP
 	if(Restrict_IsWarmupRound() && Restrict_CanPickupWeapon(client, team, id))
@@ -65,7 +72,11 @@ public Action:OnWeaponCanUse(client, weapon)
 	
 	if(!g_bSpamProtectPrint[client])
 	{
-		if(team == CS_TEAM_CT)
+		if(Restrict_IsSpecialRound() && !Restrict_AllowedForSpecialRound(id))
+		{
+			PrintToChat(client, "\x04[SM] %T %T", weaponNames[_:id], client, "SpecialNotAllowed", client);
+		}
+		else if(team == CS_TEAM_CT)
 		{
 			PrintToChat(client, "\x04[SM] %T %T", weaponNames[_:id], client, "IsRestrictedPickupCT", client, Restrict_GetRestrictValue(team, id));
 		}
@@ -134,11 +145,6 @@ public Action:DelayExec(Handle:timer)
 }
 public Action:EventRoundStart(Handle:event, const String:name[], bool:dontBroadcast)
 {
-	if(g_currentRoundSpecial != RoundType_Warmup)
-	{
-		g_currentRoundSpecial = g_nextRoundSpecial;
-		g_nextRoundSpecial = RoundType_None;
-	}
 	if(Restrict_IsSpecialRound())
 	{
 		for(new i = 1; i <= MaxClients; i++)
@@ -152,6 +158,17 @@ public Action:EventRoundStart(Handle:event, const String:name[], bool:dontBroadc
 	{
 		Restrict_CheckPlayerWeapons();
 	}
+	return Plugin_Continue;
+}
+public Action:EventRoundEnd(Handle:event, const String:name[], bool:dontBroadcast)
+{
+	if(g_currentRoundSpecial == RoundType_Warmup)
+		return Plugin_Continue;
+	
+	g_currentRoundSpecial = g_nextRoundSpecial;
+	g_nextRoundSpecial = RoundType_None;
+	
+	return Plugin_Continue;
 }
 public Action:CS_OnBuyCommand(client, const String:weapon[])
 {
