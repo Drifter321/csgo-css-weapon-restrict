@@ -152,7 +152,7 @@ public Action:UnrestrictAdminCmd(client, args)
 	if(args == 2)
 	{
 		decl String:team[10];
-		GetCmdArg(3, team, sizeof(team));
+		GetCmdArg(2, team, sizeof(team));
 		if(StrEqual(team, "both", false))
 			teams = 0;
 		else if(StrEqual(team, "ct", false))

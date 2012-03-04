@@ -173,7 +173,7 @@ CheckPerPlayer()
 			}
 			if(WeaponID:i != WEAPON_C4)
 			{
-				if(perPlayer[i][0] != -2 && Restrict_GetRestrictValue(CS_TEAM_CT, WeaponID:i) != perPlayer[i][count] && !Restrict_IsWeaponInOverride(CS_TEAM_T, WeaponID:i))
+				if(perPlayer[i][0] != -2 && Restrict_GetRestrictValue(CS_TEAM_CT, WeaponID:i) != perPlayer[i][count] && !Restrict_IsWeaponInOverride(CS_TEAM_CT, WeaponID:i))
 				{
 					Restrict_SetRestriction(WeaponID:i, CS_TEAM_CT, perPlayer[i][count], false);
 				}
@@ -196,7 +196,7 @@ CheckPerPlayer()
 			}
 			if(WeaponID:i != WEAPON_C4)
 			{
-				if(Restrict_GetRestrictValue(CS_TEAM_CT, WeaponID:i) != defaultValuesCT[i] && !Restrict_IsWeaponInOverride(CS_TEAM_T, WeaponID:i))
+				if(Restrict_GetRestrictValue(CS_TEAM_CT, WeaponID:i) != defaultValuesCT[i] && !Restrict_IsWeaponInOverride(CS_TEAM_CT, WeaponID:i))
 				{
 					Restrict_SetRestriction(WeaponID:i, CS_TEAM_CT, defaultValuesCT[i], false);
 				}
