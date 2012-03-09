@@ -91,9 +91,7 @@ public Action:WarmupCount(Handle:timer)
 	if(GetConVarInt(WarmupTime) <= warmupcount)
 	{
 		g_currentRoundSpecial = RoundType_None;
-		CreateTimer(1.1, ResetFF, _, TIMER_FLAG_NO_MAPCHANGE);
-		ServerCommand("mp_restartgame 1");
-		
+		OnWarmupEnd_Post();
 		new String:file[PLATFORM_MAX_PATH];
 		BuildPath(Path_SM, file, sizeof(file), "configs/restrict/postwarmup.cfg");
 		RunFile(file);
@@ -103,7 +101,10 @@ public Action:WarmupCount(Handle:timer)
 			if(IsClientInGame(i))
 				KillRespawnTimer(i);
 		}
-		OnWarmupEnd_Post();
+		
+		CreateTimer(1.1, ResetFF, _, TIMER_FLAG_NO_MAPCHANGE);
+		ServerCommand("mp_restartgame 1");
+		
 		return Plugin_Stop;
 	}
 	
@@ -113,6 +114,10 @@ public Action:WarmupCount(Handle:timer)
 }
 public Action:ResetFF(Handle:timer)
 {
+	//Check if special round was set
+	g_currentRoundSpecial = g_nextRoundSpecial;
+	g_nextRoundSpecial = RoundType_None;
+		
 	SetConVarInt(ffcvar, ffvalue, true, false);
 }
 GiveWarmupWeapon(client)
