@@ -312,7 +312,7 @@ public Native_GetWeaponIDExtended(Handle:hPlugin, iNumParams)
 	
 	//Check for weird buy strings...
 	decl String:weapon2[WEAPONARRAYSIZE];
-	CS_GetTranslatedWeaponAlias(weapon2, weapon2, sizeof(weapon2));
+	CS_GetTranslatedWeaponAlias(weapon, weapon2, sizeof(weapon2));
 	
 	for(new i = 0; i < MAXALIASES; i++)
 	{
