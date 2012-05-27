@@ -329,7 +329,7 @@ public Native_GetWeaponIDExtended(Handle:hPlugin, iNumParams)
 	decl String:weapon2[WEAPONARRAYSIZE];
 	CS_GetTranslatedWeaponAlias(weapon, weapon2, sizeof(weapon2));
 	
-	id = WeaponID:CS_AliasToWeaponID(weapon2); //New method as of 1.4.3
+	id = WeaponID:_:CS_AliasToWeaponID(weapon2); //New method as of 1.4.3
 	
 	/*for(new i = 0; i < MAXALIASES; i++)
 	{
