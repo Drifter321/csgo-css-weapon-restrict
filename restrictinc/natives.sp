@@ -12,6 +12,8 @@ new bool:g_bOverideCT[_:WeaponID];
 #define HEGRENADE_AMMO 11
 #define FLASH_AMMO 12
 #define SMOKE_AMMO 13
+#define INC_AMMO 14
+#define DECOY_AMMO 15
 
 RegisterNatives()
 {
@@ -115,11 +117,15 @@ public Native_RemoveRandom(Handle:hPlugin, iNumParams)
 		if(!IsClientInGame(i) || Restrict_ImmunityCheck(i) || GetClientTeam(i) != team)
 			continue;
 		
-		if(slot == SlotGrenade)
+		if(slot == SlotGrenade || id == WEAPON_TASER || id == WEAPON_KNIFE || id == WEAPON_KNIFE_GG)// CSGO has 2 "knives" slots
 		{
 			new gcount = Restrict_GetClientGrenadeCount(i, id);
+			if(id == WEAPON_TASER || id == WEAPON_KNIFE || id == WEAPON_KNIFE_GG)//CSGO 
+			{
+				gcount = 1;
+			}
 			new ent = 0;
-			for(new x = 0; x <= 31; x++)
+			for(new x = 0; x <= g_iMyWeaponsMax; x++)
 			{
 				ent = GetEntPropEnt(i, Prop_Send, "m_hMyWeapons", x);
 				if(ent && IsValidEdict(ent) && GetWeaponIDFromEnt(ent) == id)
@@ -151,6 +157,7 @@ public Native_RemoveRandom(Handle:hPlugin, iNumParams)
 		}
 	}
 	SortIntegers(weaponArray, index-1, Sort_Random);
+	
 	if(slot == SlotGrenade)
 	{
 		new ammoindex = -1;
@@ -167,6 +174,14 @@ public Native_RemoveRandom(Handle:hPlugin, iNumParams)
 			case WEAPON_SMOKEGRENADE:
 			{
 				ammoindex = SMOKE_AMMO;
+			}
+			case WEAPON_INCGRENADE, WEAPON_MOLOTOV:
+			{
+				ammoindex = INC_AMMO;
+			}
+			case WEAPON_DECOY:
+			{
+				ammoindex = DECOY_AMMO;
 			}
 		}
 		for(new i = 0; i < count; i++)
@@ -314,7 +329,9 @@ public Native_GetWeaponIDExtended(Handle:hPlugin, iNumParams)
 	decl String:weapon2[WEAPONARRAYSIZE];
 	CS_GetTranslatedWeaponAlias(weapon, weapon2, sizeof(weapon2));
 	
-	for(new i = 0; i < MAXALIASES; i++)
+	id = WeaponID:CS_AliasToWeaponID(weapon2); //New method as of 1.4.3
+	
+	/*for(new i = 0; i < MAXALIASES; i++)
 	{
 		if(StrContains(weapon2, g_WeaponAliasNames[i], false) != -1)
 		{
@@ -331,9 +348,9 @@ public Native_GetWeaponIDExtended(Handle:hPlugin, iNumParams)
 		{
 			return _:WeaponID:i;
 		}
-	}
+	}*/
 	
-	return _:WEAPON_NONE;
+	return _:id;
 }
 public Native_GetClientGrenadeCount(Handle:hPlugin, iNumParams)
 {
@@ -361,6 +378,14 @@ public Native_GetClientGrenadeCount(Handle:hPlugin, iNumParams)
 		case WEAPON_SMOKEGRENADE:
 		{
 			index = SMOKE_AMMO;
+		}
+		case WEAPON_INCGRENADE, WEAPON_MOLOTOV:
+		{
+			index = INC_AMMO;
+		}
+		case WEAPON_DECOY:
+		{
+			index = DECOY_AMMO;
 		}
 		default:
 		{
@@ -523,11 +548,11 @@ public Native_CanPickupWeapon(Handle:hPlugin, iNumParams)
 		//If pistol round always allow any pistol
 		//If knife round always allow knife
 		//If Warmup always allow warmup weapon
-		new WeaponSlot:slot = GetSlotFromWeaponID(id);
+		new WeaponType:type = GetWeaponTypeFromID(id);
 		#if defined WARMUP
-		if((g_currentRoundSpecial == RoundType_Pistol && slot == SlotPistol) || (g_currentRoundSpecial == RoundType_Knife && slot == SlotKnife) || (g_currentRoundSpecial == RoundType_Warmup && id == g_iWarmupWeapon))
+		if((g_currentRoundSpecial == RoundType_Pistol && type == WeaponTypePistol) || (g_currentRoundSpecial == RoundType_Knife && type == WeaponTypeKnife) || (g_currentRoundSpecial == RoundType_Warmup && id == g_iWarmupWeapon))
 		#else
-		if((g_currentRoundSpecial == RoundType_Pistol && slot == SlotPistol) || (g_currentRoundSpecial == RoundType_Knife && slot == SlotKnife))
+		if((g_currentRoundSpecial == RoundType_Pistol && type == WeaponTypePistol) || (g_currentRoundSpecial == RoundType_Knife && type == WeaponTypeKnife))
 		#endif
 			result = true;
 		else if(restrictval == -1 || Restrict_ImmunityCheck(client) || (teamval < restrictval))

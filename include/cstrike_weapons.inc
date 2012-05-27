@@ -1,8 +1,9 @@
-#if defined __css_weapons_inc__
+#if defined __cstrike_weapons_inc__
 #endinput
 #endif
-#define __css_weapons_inc__
+#define __cstrike_weapons_inc__
 
+#include "halflife.inc"
 #include "adt_trie.inc"
 #include "string.inc"
 #include "cstrike.inc"
@@ -17,41 +18,61 @@ static Handle:hWeaponInfoTrie;
 
 enum WeaponID
 {
-	WEAPON_NONE,
-    WEAPON_P228,
-    WEAPON_GLOCK,
-    WEAPON_SCOUT,
-    WEAPON_HEGRENADE,
-    WEAPON_XM1014,
-    WEAPON_C4,
-    WEAPON_MAC10,
-    WEAPON_AUG,
-    WEAPON_SMOKEGRENADE,
-    WEAPON_ELITE,
-    WEAPON_FIVESEVEN,
-    WEAPON_UMP45,
-    WEAPON_SG550,
-    WEAPON_GALIL,
-    WEAPON_FAMAS,
-    WEAPON_USP,
-    WEAPON_AWP,
-    WEAPON_MP5NAVY,
-    WEAPON_M249,
-    WEAPON_M3,
-    WEAPON_M4A1,
-    WEAPON_TMP,
-    WEAPON_G3SG1,
-    WEAPON_FLASHBANG,
-    WEAPON_DEAGLE,
-    WEAPON_SG552,
-    WEAPON_AK47,
-    WEAPON_KNIFE,
-    WEAPON_P90,
-    WEAPON_SHIELD, //Dosnt exist
-    WEAPON_KEVLAR, //item_
-    WEAPON_ASSAULTSUIT,//item_
-    WEAPON_NIGHTVISION,//item_
-	WEAPON_DEFUSER //Not a valid ID for GetWeaponPrice
+	WEAPON_NONE = 0,
+	WEAPON_P228,
+	WEAPON_GLOCK,
+	WEAPON_SCOUT,
+	WEAPON_HEGRENADE,
+	WEAPON_XM1014,
+	WEAPON_C4,
+	WEAPON_MAC10,
+	WEAPON_AUG,
+	WEAPON_SMOKEGRENADE,
+	WEAPON_ELITE,
+	WEAPON_FIVESEVEN,
+	WEAPON_UMP45,
+	WEAPON_SG550,
+	WEAPON_GALIL,
+	WEAPON_FAMAS,
+	WEAPON_USP,
+	WEAPON_AWP,
+	WEAPON_MP5NAVY,
+	WEAPON_M249,
+	WEAPON_M3,
+	WEAPON_M4A1,
+	WEAPON_TMP,
+	WEAPON_G3SG1,
+	WEAPON_FLASHBANG,
+	WEAPON_DEAGLE,
+	WEAPON_SG552,
+	WEAPON_AK47,
+	WEAPON_KNIFE,
+	WEAPON_P90,
+	WEAPON_SHIELD,
+	WEAPON_KEVLAR,
+	WEAPON_ASSAULTSUIT,
+	WEAPON_NIGHTVISION,
+	WEAPON_GALILAR,
+	WEAPON_BIZON,
+	WEAPON_MAG7,
+	WEAPON_NEGEV,
+	WEAPON_SAWEDOFF,
+	WEAPON_TEC9,
+	WEAPON_TASER,
+	WEAPON_HKP2000,
+	WEAPON_MP7,
+	WEAPON_MP9,
+	WEAPON_NOVA,
+	WEAPON_P250,
+	WEAPON_SCAR17,
+	WEAPON_SCAR20,
+	WEAPON_SG556,
+	WEAPON_SSG08,
+	WEAPON_KNIFE_GG,
+	WEAPON_MOLOTOV,
+	WEAPON_DECOY,
+	WEAPON_INCGRENADE,
+	WEAPON_DEFUSER
 };
 enum WeaponType
 {
@@ -66,7 +87,8 @@ enum WeaponType
 	WeaponTypeKnife,
 	WeaponTypeOther,
 	WeaponTypeShield,
-	WeaponTypeNone
+	WeaponTypeNone,
+	WeaponTypeTaser
 };
 enum WeaponSlot
 {
@@ -96,7 +118,12 @@ new const String:weaponNames[_:WeaponID][] =
 	"m3",			"m4a1",			"tmp",			"g3sg1",
 	"flashbang",	"deagle",		"sg552",		"ak47",
 	"knife",		"p90",			"shield",		"vest",			
-	"vesthelm",		"nvgs",			"defuser"
+	"vesthelm",		"nvgs",			"galilar",		"bizon",
+	"mag7",			"negev",		"sawedoff",		"tec9",
+	"taser",		"hkp2000",		"mp7",			"mp9",
+	"nova",			"p250",			"scar17",		"scar20",
+	"sg556",		"ssg08",		"knifegg",		"molotov",
+	"decoy",		"incgrenade",	"defuser"
 };
 new const WeaponType:weaponGroups[_:WeaponID] = 
 { 
@@ -108,7 +135,12 @@ new const WeaponType:weaponGroups[_:WeaponID] =
 	_:WeaponTypeShotgun,	_:WeaponTypeRifle,		_:WeaponTypeSMG,		_:WeaponTypeSniper,
 	_:WeaponTypeGrenade,	_:WeaponTypePistol,     _:WeaponTypeRifle,		_:WeaponTypeRifle,
 	_:WeaponTypeKnife,		_:WeaponTypeSMG,		_:WeaponTypeShield,		_:WeaponTypeArmor,
-	_:WeaponTypeArmor,		_:WeaponTypeOther,		_:WeaponTypeOther
+	_:WeaponTypeArmor,		_:WeaponTypeOther,		_:WeaponTypeRifle,		_:WeaponTypeSMG,
+	_:WeaponTypeShotgun,	_:WeaponTypeMachineGun,	_:WeaponTypeShotgun,	_:WeaponTypePistol,
+	_:WeaponTypeTaser,		_:WeaponTypePistol,		_:WeaponTypeSMG,		_:WeaponTypeSMG,
+	_:WeaponTypeShotgun,	_:WeaponTypePistol,		_:WeaponTypeRifle,		_:WeaponTypeSniper,
+	_:WeaponTypeRifle,		_:WeaponTypeSniper,		_:WeaponTypeKnife,		_:WeaponTypeGrenade,
+	_:WeaponTypeGrenade,	_:WeaponTypeGrenade,	_:WeaponTypeOther
 };
 new const WeaponSlot:weaponSlots[_:WeaponID] = 
 { 
@@ -120,20 +152,13 @@ new const WeaponSlot:weaponSlots[_:WeaponID] =
 	_:SlotPrimmary,		_:SlotPrimmary,		_:SlotPrimmary,		_:SlotPrimmary,
 	_:SlotGrenade,		_:SlotPistol,		_:SlotPrimmary,		_:SlotPrimmary,
 	_:SlotKnife,		_:SlotPrimmary, 	_:SlotUnknown,		_:SlotNone,
-	_:SlotNone,			_:SlotNone,			_:SlotNone
+	_:SlotNone,			_:SlotNone,			_:SlotPrimmary,		_:SlotPrimmary,
+	_:SlotPrimmary,		_:SlotPrimmary,		_:SlotPrimmary,		_:SlotPistol,
+	_:SlotKnife,		_:SlotPistol,		_:SlotPrimmary,		_:SlotPrimmary,
+	_:SlotPrimmary,		_:SlotPistol,		_:SlotPrimmary,		_:SlotPrimmary,
+	_:SlotPrimmary,		_:SlotPrimmary,		_:SlotKnife,		_:SlotGrenade,
+	_:SlotGrenade,		_:SlotGrenade,		_:SlotNone
 };
-/*new const weaponPrices[_:WeaponID] = 
-{//These are wrong i havent fixed them...
-	0,		1000,	650,	0,	
-	0,		200,	1250,	200,
-	300,	300,	2000,	2500,
-	2750,	3500,	4750,	5000,
-	2250,	3100,	3500,	4200,
-	400,	500,	600,	650,
-	800,	750,	1700,	3000,
-	1400,	1250,	1500,	1700,
-	2350,	5750,	0
-};*/
 new const BuyTeams[_:WeaponID] = 
 { 
 	UNKNOWNTEAM,			BOTHTEAMS,				BOTHTEAMS,				BOTHTEAMS,	
@@ -144,7 +169,33 @@ new const BuyTeams[_:WeaponID] =
 	BOTHTEAMS,				COUNTERTERRORISTTEAM,	COUNTERTERRORISTTEAM,	TERRORISTTEAM,
 	BOTHTEAMS,				BOTHTEAMS,				TERRORISTTEAM,			TERRORISTTEAM,
 	BOTHTEAMS,				BOTHTEAMS,				UNKNOWNTEAM,			BOTHTEAMS,
-	BOTHTEAMS,				BOTHTEAMS,				COUNTERTERRORISTTEAM
+	BOTHTEAMS,				BOTHTEAMS,				TERRORISTTEAM,			BOTHTEAMS,
+	COUNTERTERRORISTTEAM,	BOTHTEAMS,				TERRORISTTEAM,			TERRORISTTEAM,
+	BOTHTEAMS,				BOTHTEAMS,				BOTHTEAMS,				COUNTERTERRORISTTEAM,
+	BOTHTEAMS,				BOTHTEAMS,				UNKNOWNTEAM,			COUNTERTERRORISTTEAM,
+	TERRORISTTEAM,			BOTHTEAMS,				BOTHTEAMS,				TERRORISTTEAM,
+	BOTHTEAMS,				COUNTERTERRORISTTEAM,	COUNTERTERRORISTTEAM
+};
+//-1 None
+// 1 ALL
+// 2 CSS
+// 3 CSGO
+new const AllowedGame[_:WeaponID] = 
+{
+	-1,				2,				1,				2,		
+	2,				1,				1,				1,		
+	1,				1,				1,				1,
+	1,				2,				2,				1,
+	2,				1,				2,				1,
+	2,				1,				2,				1,
+	1,				1,				2,				1,
+	1,				1,				-1,				1,			
+	1,				1,				3,				3,
+	3,				3,				3,				3,
+	3,				3,				3,				3,
+	3,				3,				-1,				3,
+	3,				3,				3,				3,
+	3,				3,				1
 };
 stock CSWeapons_Init()
 {
@@ -162,7 +213,15 @@ stock InitWeaponInfoTrie()
 		info[InfoID] = WeaponID:i;
 		info[InfoSlot] = weaponSlots[WeaponID:i];
 		info[InfoType] = weaponGroups[WeaponID:i];
-		info[InfoTeam] = BuyTeams[WeaponID:i]
+		
+		if(WeaponID:i == WEAPON_ELITE && GuessSDKVersion() == SOURCE_SDK_CSGO)
+		{
+			info[InfoTeam] = BOTHTEAMS;//CSGO elites are for both teams.
+		}
+		else
+		{
+			info[InfoTeam] = BuyTeams[WeaponID:i];
+		}
 		
 		SetTrieArray(hWeaponInfoTrie, weaponNames[WeaponID:i], info[0], _:WeaponInfo);
 	}
@@ -214,9 +273,9 @@ stock GetWeaponPriceFromName(client, const String:weapon[], bool:defaultprice)
 }
 stock GetWeaponPrice(client, WeaponID:id, bool:defaultprice=false)
 {	
-	if(id > WEAPON_DEFUSER || id == WEAPON_NONE)
+	if(id > WEAPON_DEFUSER || id <= WEAPON_NONE)
 		return 0;
-	if(id == WEAPON_DEFUSER)
+	if(id == WEAPON_DEFUSER && GuessSDKVersion() != SOURCE_SDK_CSGO) //Only assume on CSS
 		return 200;
 	
 	return CS_GetWeaponPrice(client, CSWeaponID:_:id, defaultprice);

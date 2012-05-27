@@ -58,7 +58,7 @@ stock RemoveForSpecialRound(client)
 			Restrict_RemoveWeaponDrop(client, ent);
 		}
 		new index = 0;
-		for(new x = 0; x <= 31; x++)
+		for(new x = 0; x <= g_iMyWeaponsMax; x++)
 		{
 			index = GetEntPropEnt(client, Prop_Send, "m_hMyWeapons", x);
 			if(index && IsValidEdict(index))

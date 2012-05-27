@@ -2,7 +2,7 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <cstrike>
-#include <css_weapons>
+#include <cstrike_weapons>
 #include <restrict>
 #pragma semicolon 1
 
@@ -16,12 +16,19 @@
 #include <adminmenu>
 #endif
 
-#define PLUGIN_VERSION "3.0.9"
+#define PLUGIN_VERSION "3.1.0"
 #define ADMINCOMMANDTAG "\x04[SM] "
 #define MAXALIASES 8
 #define MAXWEAPONGROUPS 7
-new const String:g_WeaponAliasNames[][WEAPONARRAYSIZE] = {"flash", "sgren", "hegren", "assaultsuit", "kevlar", "mp5", "magnum", "nightvision"};
-new const String:g_WeaponAliasReplace[][WEAPONARRAYSIZE] = {"flashbang", "smokegrenade", "hegrenade", "vesthelm", "vest", "mp5navy", "awp", "nvgs"};
+enum GameType
+{
+	GAME_CSS,
+	GAME_CSGO
+};
+/*new const String:g_WeaponAliasNames[][WEAPONARRAYSIZE] = {"flash", "sgren", "hegren", "assaultsuit", "kevlar", "mp5", "magnum", "nightvision"};
+new const String:g_WeaponAliasReplace[][WEAPONARRAYSIZE] = {"flashbang", "smokegrenade", "hegrenade", "vesthelm", "vest", "mp5navy", "awp", "nvgs"};*/
+new GameType:g_iGame;
+new g_iMyWeaponsMax = 31;
 new const String:g_WeaponGroupNames[][WEAPONARRAYSIZE] = {"pistols", "smgs", "shotguns", "rifles", "snipers", "grenades", "armor"};
 
 new bool:g_bRestrictSound = false;
@@ -70,10 +77,19 @@ public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
 {
 	decl String:gamedir[PLATFORM_MAX_PATH];
 	GetGameFolderName(gamedir, sizeof(gamedir));
-	if(strcmp(gamedir, "cstrike") != 0)
+	if(strcmp(gamedir, "cstrike") != 0 && strcmp(gamedir, "csgo") != 0)
 	{
-		strcopy(error, err_max, "This plugin is only supported on CS:S");
+		strcopy(error, err_max, "This plugin is only supported on CS");
 		return APLRes_Failure;
+	}
+	if(strcmp(gamedir, "cstrike") == 0)
+	{
+		g_iGame = GAME_CSS;
+	}
+	else
+	{
+		g_iMyWeaponsMax = 63;
+		g_iGame = GAME_CSGO;
 	}
 	g_bLateLoaded = late;
 	RegisterNatives();

@@ -19,8 +19,8 @@ new Handle:PerPlayerSpecs = INVALID_HANDLE;
 #endif
 
 //Convar Handles
-new Handle:hRestrictCVarsT[_:WeaponID-3];//No shield, No None, No Defuser
-new Handle:hRestrictCVarsCT[_:WeaponID-3];//No shield, No None, No C4
+new Handle:hRestrictCVarsT[_:WeaponID-4];//No shield, No None, No Defuser, No SCAR17
+new Handle:hRestrictCVarsCT[_:WeaponID-4];//No shield, No None, No C4, No SCAR17
 new Handle:g_version = INVALID_HANDLE;
 new CvarArrayHandleValCT[_:WeaponID];
 new CvarArrayHandleValT[_:WeaponID];
@@ -38,7 +38,7 @@ CreateConVars()
 	decl String:desc[128];
 	for(new i = 0; i < _:WeaponID; i++)
 	{
-		if(WeaponID:i == WEAPON_NONE || WeaponID:i == WEAPON_SHIELD)
+		if(WeaponID:i == WEAPON_NONE || WeaponID:i == WEAPON_SHIELD || WeaponID:i == WEAPON_SCAR17 || AllowedGame[WeaponID:i] == -1 || (g_iGame == GAME_CSS && (AllowedGame[WeaponID:i] != 1 && AllowedGame[WeaponID:i] != 2)) || (g_iGame == GAME_CSGO && (AllowedGame[WeaponID:i] != 1 && AllowedGame[WeaponID:i] != 3)))
 		{
 			CvarArrayHandleValCT[WeaponID:i] = -1;
 			CvarArrayHandleValT[WeaponID:i] = -1;
@@ -89,9 +89,12 @@ CreateConVars()
 	AdminImmunity 	= CreateConVar("sm_weapon_restrict_immunity", "0", "Enables admin immunity so admins can buy restricted weapons");
 	RestrictSound	= CreateConVar("sm_restricted_sound", "sound/buttons/weapon_cant_buy.wav", "Sound to play when a weapon is restricted (leave blank to disable)");
 	mp_maxmoney 	= FindConVar("mp_maxmoney");
-	hHeAmmo			= FindConVar("ammo_hegrenade_max");
-	hFlashAmmo		= FindConVar("ammo_flashbang_max");
-	hSmokeAmmo		= FindConVar("ammo_smokegrenade_max");
+	if(g_iGame == GAME_CSS)
+	{
+		hHeAmmo			= FindConVar("ammo_hegrenade_max");
+		hFlashAmmo		= FindConVar("ammo_flashbang_max");
+		hSmokeAmmo		= FindConVar("ammo_smokegrenade_max");
+	}
 	#if defined WARMUP
 	WarmUp 			= CreateConVar("sm_warmup_enable", "1", "Enable warmup.");
 	WarmupTime		= CreateConVar("sm_warmup_time", "45", "How long in seconds warmup lasts");

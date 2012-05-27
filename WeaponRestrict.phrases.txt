@@ -132,6 +132,86 @@
 	{
 		"en"		"Nightvision"
 	}
+	"galilar"
+	{
+		"en"		"Galil AR"
+	}
+	"bizon"
+	{
+		"en"		"Bizon"
+	}
+	"mag7"
+	{
+		"en"		"Mag7"
+	}
+	"negev"
+	{
+		"en"		"Negev"
+	}
+	"sawedoff"
+	{
+		"en"		"Sawedoff Shotgun"
+	}
+	"tec9"
+	{
+		"en"		"Tec-9"
+	}
+	"taser"
+	{
+		"en"		"Taser"
+	}
+	"hkp2000"
+	{
+		"en"		"HKP2000"
+	}
+	"mp7"
+	{
+		"en"		"MP7"
+	}
+	"mp9"
+	{
+		"en"		"MP9"
+	}
+	"nova"
+	{
+		"en"		"Nova Shotgun"
+	}
+	"p250"
+	{
+		"en"		"P250"
+	}
+	"scar17"
+	{
+		"en"		"Scar 17"
+	}
+	"scar20"
+	{
+		"en"		"Scar 20"
+	}
+	"sg556"
+	{
+		"en"		"SG556"
+	}
+	"ssg08"
+	{
+		"en"		"SSG08"
+	}
+	"knifegg"
+	{
+		"en"		"Gungame Knife"
+	}
+	"molotov"
+	{
+		"en"		"Molotov"
+	}
+	"decoy"
+	{
+		"en"		"Decoy Grenade"
+	}
+	"incgrenade"
+	{
+		"en"		"Incendiary Grenade"
+	}
 	"pistols"
 	{
 		"en"		"Pistols"
