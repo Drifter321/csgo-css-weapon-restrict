@@ -128,7 +128,7 @@ public Native_RemoveRandom(Handle:hPlugin, iNumParams)
 			for(new x = 0; x <= g_iMyWeaponsMax; x++)
 			{
 				ent = GetEntPropEnt(i, Prop_Send, "m_hMyWeapons", x);
-				if(ent && IsValidEdict(ent) && GetWeaponIDFromEnt(ent) == id)
+				if(ent != -1 && ent && IsValidEdict(ent) && GetWeaponIDFromEnt(ent) == id)
 				{
 					for(new z = 1; z <= gcount; z++)
 					{
