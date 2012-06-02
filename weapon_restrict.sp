@@ -17,7 +17,7 @@
 #endif
 
 #define PLUGIN_VERSION "3.1.0"
-#define ADMINCOMMANDTAG "\x04[SM] "
+#define ADMINCOMMANDTAG "\x01 \x04[SM] "
 #define MAXALIASES 8
 #define MAXWEAPONGROUPS 7
 enum GameType
