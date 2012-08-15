@@ -119,10 +119,14 @@ public Native_RemoveRandom(Handle:hPlugin, iNumParams)
 		
 		if(slot == SlotGrenade || id == WEAPON_TASER || id == WEAPON_KNIFE || id == WEAPON_KNIFE_GG)// CSGO has 2 "knives" slots
 		{
-			new gcount = Restrict_GetClientGrenadeCount(i, id);
+			new gcount;
 			if(id == WEAPON_TASER || id == WEAPON_KNIFE || id == WEAPON_KNIFE_GG)//CSGO 
 			{
 				gcount = 1;
+			}
+			else
+			{
+				gcount = Restrict_GetClientGrenadeCount(i, id);
 			}
 			new ent = 0;
 			for(new x = 0; x <= g_iMyWeaponsMax; x++)
