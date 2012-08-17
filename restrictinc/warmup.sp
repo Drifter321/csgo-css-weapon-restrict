@@ -48,8 +48,8 @@ bool:StartWarmup()
 	{
 		SetConVarInt(FindConVar("mp_do_warmup_period"), 0, true, false);
 		SetConVarInt(FindConVar("mp_warmuptime"), GetConVarInt(WarmupTime), true, false);
-		GameRules_SetProp("m_bWarmupPeriod", 1, 1, 0, true);
-		GameRules_SetPropFloat("m_fWarmupPeriodEnd", (GetGameTime()+GetConVarFloat(WarmupTime)), 0, true);
+		GameRules_SetProp("m_bWarmupPeriod", true, _, _, true);
+		GameRules_SetPropFloat("m_fWarmupPeriodEnd", (GetGameTime()+GetConVarFloat(WarmupTime)), _, true);
 	}
 	CreateTimer(1.0, WarmupCount, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 	OnWarmupStart_Post();
