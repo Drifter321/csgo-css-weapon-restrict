@@ -125,6 +125,10 @@ public OnConfigsExecuted()
 	CheckConfig();
 	#endif
 	
+	CreateTimer(0.1, DelayExec);
+}
+public Action:DelayExec(Handle:timer)
+{
 	#if defined WARMUP
 	if(GetConVarBool(WarmUp) && !g_bLateLoaded)
 	{
@@ -132,16 +136,12 @@ public OnConfigsExecuted()
 			g_currentRoundSpecial = RoundType_Warmup;
 	}
 	#endif
-	CreateTimer(0.1, DelayExec);
-	g_bLateLoaded = false;
-}
-public Action:DelayExec(Handle:timer)
-{
 	GetWeaponRestrictSound();
 	#if defined PERPLAYER
 	PerPlayerInit();
 	CheckPerPlayer();
 	#endif
+	g_bLateLoaded = false;
 }
 public Action:EventRoundStart(Handle:event, const String:name[], bool:dontBroadcast)
 {

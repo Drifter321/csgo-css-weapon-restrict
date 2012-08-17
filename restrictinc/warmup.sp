@@ -40,7 +40,17 @@ bool:StartWarmup()
 		SetConVarInt(ffcvar, 0, true, false);
 	}
 	warmupcount = 1;
-	PrintCenterTextAll("%t", "WarmupCountdown", GetConVarInt(WarmupTime));
+	if(g_iGame == GAME_CSS)
+	{
+		PrintCenterTextAll("%t", "WarmupCountdown", GetConVarInt(WarmupTime));
+	}
+	else
+	{
+		SetConVarInt(FindConVar("mp_do_warmup_period"), 0, true, false);
+		SetConVarInt(FindConVar("mp_warmuptime"), GetConVarInt(WarmupTime), true, false);
+		GameRules_SetProp("m_bWarmupPeriod", 1, 1, 0, true);
+		GameRules_SetPropFloat("m_fWarmupPeriodEnd", (GetGameTime()+GetConVarFloat(WarmupTime)), 0, true);
+	}
 	CreateTimer(1.0, WarmupCount, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 	OnWarmupStart_Post();
 	return true;
@@ -90,27 +100,42 @@ public Action:WarmupCount(Handle:timer)
 {
 	if(GetConVarInt(WarmupTime) <= warmupcount)
 	{
-		g_currentRoundSpecial = RoundType_None;
-		OnWarmupEnd_Post();
-		new String:file[PLATFORM_MAX_PATH];
-		BuildPath(Path_SM, file, sizeof(file), "configs/restrict/postwarmup.cfg");
-		RunFile(file);
-		
-		for(new i = 1; i <= MaxClients; i++)
+		EndWarmup();
+		if(g_iGame == GAME_CSS)
 		{
-			if(IsClientInGame(i))
-				KillRespawnTimer(i);
+			ServerCommand("mp_restartgame 1");
 		}
-		
-		CreateTimer(1.1, ResetFF, _, TIMER_FLAG_NO_MAPCHANGE);
-		ServerCommand("mp_restartgame 1");
 		
 		return Plugin_Stop;
 	}
-	
-	PrintCenterTextAll("%t", "WarmupCountdown", GetConVarInt(WarmupTime)-warmupcount);
+	if(g_iGame == GAME_CSS)
+	{
+		PrintCenterTextAll("%t", "WarmupCountdown", GetConVarInt(WarmupTime)-warmupcount);
+	}
+	else
+	{
+		GameRules_SetProp("m_bWarmupPeriod", true, _, _, true);
+		GameRules_SetPropFloat("m_fWarmupPeriodEnd", GetGameTime()+(GetConVarFloat(WarmupTime)-float(warmupcount)), _, true);
+		FireEvent(CreateEvent("round_announce_warmup", true));
+	}
 	warmupcount++;
 	return Plugin_Continue;
+}
+EndWarmup()
+{
+	g_currentRoundSpecial = RoundType_None;
+	OnWarmupEnd_Post();
+	new String:file[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, file, sizeof(file), "configs/restrict/postwarmup.cfg");
+	RunFile(file);
+		
+	for(new i = 1; i <= MaxClients; i++)
+	{
+		if(IsClientInGame(i))
+			KillRespawnTimer(i);
+	}
+		
+	CreateTimer(1.1, ResetFF, _, TIMER_FLAG_NO_MAPCHANGE);
 }
 public Action:ResetFF(Handle:timer)
 {
