@@ -87,7 +87,13 @@ CreateConVars()
 	AllowPickup		= CreateConVar("sm_allow_restricted_pickup", "0", "Set to 0 to ONLY allow pickup if under the max allowed. Set to 1 to allow restricted weapon pickup");
 	AwpAllowPickup	= CreateConVar("sm_allow_awp_pickup", "1", "Set to 0 to allow awp pickup ONLY if it is under the max allowed. Set to 1 to use sm_allow_restricted_pickup method.");
 	AdminImmunity 	= CreateConVar("sm_weapon_restrict_immunity", "0", "Enables admin immunity so admins can buy restricted weapons");
-	RestrictSound	= CreateConVar("sm_restricted_sound", "sound/buttons/weapon_cant_buy.wav", "Sound to play when a weapon is restricted (leave blank to disable)");
+	
+	//Change default value since it doesnt exist in CS:GO and sounds dont work so disable.
+	if(g_iGame == GAME_CSS)
+		RestrictSound	= CreateConVar("sm_restricted_sound", "sound/buttons/weapon_cant_buy.wav", "Sound to play when a weapon is restricted (leave blank to disable)");
+	else
+		RestrictSound	= CreateConVar("sm_restricted_sound", "", "Sound to play when a weapon is restricted (leave blank to disable)");
+		
 	mp_maxmoney 	= FindConVar("mp_maxmoney");
 	if(g_iGame == GAME_CSS)
 	{

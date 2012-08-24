@@ -16,8 +16,8 @@
 #include <adminmenu>
 #endif
 
-#define PLUGIN_VERSION "3.1.0"
-#define ADMINCOMMANDTAG "\x01 \x04[SM] "
+#define PLUGIN_VERSION "3.1.2"
+#define ADMINCOMMANDTAG "\x01\x0B\x04[SM] "
 #define MAXALIASES 8
 #define MAXWEAPONGROUPS 7
 enum GameType
