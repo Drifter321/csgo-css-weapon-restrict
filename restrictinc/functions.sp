@@ -81,7 +81,7 @@ stock GetWeaponRestrictSound()
 	g_bRestrictSound = false;
 	new String:file[PLATFORM_MAX_PATH];
 	GetConVarString(RestrictSound, file, sizeof(file));
-	if(FileExists(file) && strlen(file) > 0)
+	if(strlen(file) > 0 && FileExists(file, true))
 	{
 		AddFileToDownloadsTable(file);
 		if(StrContains(file, "sound/", false) == 0)
