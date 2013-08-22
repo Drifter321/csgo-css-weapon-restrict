@@ -16,7 +16,7 @@
 #include <adminmenu>
 #endif
 
-#define PLUGIN_VERSION "3.1.3"
+#define PLUGIN_VERSION "3.1.4"
 #define ADMINCOMMANDTAG "\x01\x0B\x04[SM] "
 #define MAXALIASES 8
 #define MAXWEAPONGROUPS 7
