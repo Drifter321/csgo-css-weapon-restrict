@@ -125,6 +125,10 @@ public SMCResult:Perplayer_KeyValue(Handle:parser, const String:key[], const Str
 	else
 	{
 		new index = StringToInt(key);
+		
+		if(index > MAXPLAYERS)
+			index = MAXPLAYERS;
+		
 		for(new i = iLastIndex; i < index; i++)
 		{
 			perPlayer[currentID][i] = iLastVal;

@@ -27,6 +27,25 @@ stock bool:RunFile(String:file[])
 	CloseHandle(FileHandle);
 	return true;
 }
+stock GetCurrentMapEx(String:map[], size)
+{
+	GetCurrentMap(map, size);
+	
+	new index = -1;
+	for(new i = 0; i < strlen(map); i++)
+	{
+		if(StrContains(map[i], "/") != -1 || StrContains(map[i], "\\") != -1)
+		{
+			if(i != strlen(map) - 1)
+				index = i;
+		}
+		else
+		{
+			break;
+		}
+	}
+	strcopy(map, size, map[index+1]);
+}
 stock RemoveForSpecialRound(client)
 {
 	new WeaponID:weapon = WEAPON_NONE;
