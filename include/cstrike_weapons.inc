@@ -214,7 +214,7 @@ stock InitWeaponInfoTrie()
 		info[InfoSlot] = weaponSlots[WeaponID:i];
 		info[InfoType] = weaponGroups[WeaponID:i];
 		
-		if(WeaponID:i == WEAPON_ELITE && GuessSDKVersion() == SOURCE_SDK_CSGO)
+		if(WeaponID:i == WEAPON_ELITE && GetEngineVersion() == Engine_CSGO)
 		{
 			info[InfoTeam] = BOTHTEAMS;//CSGO elites are for both teams.
 		}
@@ -275,7 +275,7 @@ stock GetWeaponPrice(client, WeaponID:id, bool:defaultprice=false)
 {	
 	if(id > WEAPON_DEFUSER || id <= WEAPON_NONE)
 		return 0;
-	if(id == WEAPON_DEFUSER && GuessSDKVersion() != SOURCE_SDK_CSGO) //Only assume on CSS
+	if(id == WEAPON_DEFUSER && GetEngineVersion() != Engine_CSGO) //Only assume on CSS
 		return 200;
 	
 	return CS_GetWeaponPrice(client, CSWeaponID:_:id, defaultprice);
