@@ -149,11 +149,11 @@ GiveWarmupWeapon(client)
 {
 	if(g_iWarmupWeapon != WEAPON_KNIFE && IsClientInGame(client) && GetClientTeam(client) > CS_TEAM_SPECTATOR && Restrict_IsWarmupRound())
 	{
-		if(GetPlayerWeaponSlot(client, _:GetSlotFromWeaponID(g_iWarmupWeapon)) == -1)// avoids giving player weapon twice for some odd reason grenade is given twice without this
+		if(GetPlayerWeaponSlot(client, _:GetSlotFromWeaponID(g_iWarmupWeapon)) == -1 || (GetSlotFromWeaponID(g_iWarmupWeapon) == SlotKnife && g_iWarmupWeapon == WEAPON_TASER))// avoids giving player weapon twice for some odd reason grenade is given twice without this
 		{
-			new String:weapon2[WEAPONARRAYSIZE];
-			Format(weapon2, sizeof(weapon2), "weapon_%s", weaponNames[_:g_iWarmupWeapon]);
-			GivePlayerItem(client, weapon2);
+			new String:weapon[WEAPONARRAYSIZE];
+			Format(weapon, sizeof(weapon), "weapon_%s", weaponNames[_:g_iWarmupWeapon]);
+			GivePlayerItem(client, weapon);
 		}
 	}
 }
