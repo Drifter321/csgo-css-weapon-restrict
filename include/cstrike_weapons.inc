@@ -230,7 +230,7 @@ stock WeaponID:GetWeaponID(const String:weapon[])
 {
 	decl info[WeaponInfo];
 	if(GetWeaponInfo(weapon, info))
-		return info[InfoID]
+		return info[InfoID];
 	
 	return WEAPON_NONE;
 }
@@ -238,7 +238,7 @@ stock WeaponSlot:GetWeaponSlot(const String:weapon[])
 {
 	decl info[WeaponInfo];
 	if(GetWeaponInfo(weapon, info))
-		return info[InfoSlot]
+		return info[InfoSlot];
 	
 	return SlotUnknown;
 }
@@ -246,7 +246,7 @@ stock WeaponType:GetWeaponType(const String:weapon[])
 {
 	decl info[WeaponInfo];
 	if(GetWeaponInfo(weapon, info))
-		return info[InfoType]
+		return info[InfoType];
 	
 	return WeaponTypeNone;
 }
@@ -282,11 +282,11 @@ stock GetWeaponPrice(client, WeaponID:id, bool:defaultprice=false)
 }
 stock WeaponSlot:GetSlotFromWeaponID(WeaponID:id)
 {
-	return weaponSlots[_:id]
+	return weaponSlots[_:id];
 }
 stock WeaponType:GetWeaponTypeFromID(WeaponID:id)
 {
-	return weaponGroups[_:id]
+	return weaponGroups[_:id];
 } 
 stock bool:GetWeaponInfo(const String:weapon[], info[WeaponInfo])
 {
