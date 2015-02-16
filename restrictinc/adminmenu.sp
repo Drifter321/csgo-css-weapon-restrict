@@ -379,7 +379,7 @@ stock HandleMenuGroupRestriction(client, WeaponType:group, amount, team)
 }
 AddGroupsToMenu(Handle:menu, client)
 {
-	decl String:weaponArray[MAXWEAPONGROUPS][WEAPONARRAYSIZE];
+	new String:weaponArray[MAXWEAPONGROUPS][WEAPONARRAYSIZE];
 	new size;
 	
 	for(new i = 0; i < MAXWEAPONGROUPS; i++)
@@ -401,8 +401,8 @@ AddGroupsToMenu(Handle:menu, client)
 }
 AddWeaponsToMenu(Handle:menu, client)
 {
-	new int = _:WeaponID;
-	decl String:weaponArray[int][WEAPONARRAYSIZE];
+	new len = _:WeaponID;
+	new String:weaponArray[len][WEAPONARRAYSIZE];
 	new size;
 	
 	for(new i = 0; i < _:WeaponID; i++)
