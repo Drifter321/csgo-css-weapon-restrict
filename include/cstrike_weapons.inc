@@ -287,7 +287,11 @@ stock WeaponSlot:GetSlotFromWeaponID(WeaponID:id)
 stock WeaponType:GetWeaponTypeFromID(WeaponID:id)
 {
 	return weaponGroups[_:id];
-} 
+}
+stock GetAllowedGameForWeapon(WeaponID:id)
+{
+	return AllowedGame[_:id];
+}
 stock bool:GetWeaponInfo(const String:weapon[], info[WeaponInfo])
 {
 	if(hWeaponInfoTrie == INVALID_HANDLE)
