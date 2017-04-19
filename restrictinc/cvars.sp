@@ -117,7 +117,7 @@ CreateConVars()
 	#endif
 	AutoExecConfig(true, "weapon_restrict");
 	
-	g_version = CreateConVar("sm_weaponrestrict_version", PLUGIN_VERSION, "Weapon restrict version", FCVAR_PLUGIN|FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY|FCVAR_DONTRECORD);
+	g_version = CreateConVar("sm_weaponrestrict_version", PLUGIN_VERSION, "Weapon restrict version", FCVAR_SPONLY|FCVAR_REPLICATED|FCVAR_NOTIFY|FCVAR_DONTRECORD);
 	
 }
 #if defined PERPLAYER
