@@ -90,7 +90,7 @@ public Action:RestrictAdminCmd(client, args)
 {
 	if(args < 1)
 	{
-		ReplyToCommand(client, "\x01\x0B\x04[SM] %T", "RestrictReply", client);
+		ReplyToCommand(client, "\x01[\x04SM\x01]\x04 %T", "RestrictReply", client);
 		return Plugin_Handled;
 	}
 	decl String:weapon[100];
@@ -98,7 +98,7 @@ public Action:RestrictAdminCmd(client, args)
 	if(args == 1)
 	{
 		if(!HandleRestrictionCommand(client, weapon, _, 0, true))
-			ReplyToCommand(client, "\x01\x0B\x04[SM] %T", "RestrictReply", client);
+			ReplyToCommand(client, "\x01[\x04SM\x01]\x04 %T", "RestrictReply", client);
 		return Plugin_Handled;
 	}
 	new amount = 0;
@@ -109,7 +109,7 @@ public Action:RestrictAdminCmd(client, args)
 		amount = StringToInt(amountString);
 		if((amount == 0 && !StrEqual(amountString, "0")) || amount < -1)
 		{
-			ReplyToCommand(client, "\x01\x0B\x04[SM] %T", "InvalidAmount", client);
+			ReplyToCommand(client, "\x01[\x04SM\x01]\x04 %T", "InvalidAmount", client);
 			return Plugin_Handled;
 		}
 	}
@@ -126,7 +126,7 @@ public Action:RestrictAdminCmd(client, args)
 			teams = CS_TEAM_T;
 		else
 		{
-			ReplyToCommand(client, "\x01\x0B\x04[SM] %T", "InvalidTeam", client);
+			ReplyToCommand(client, "\x01[\x04SM\x01]\x04 %T", "InvalidTeam", client);
 			return Plugin_Handled;
 		}
 	}
@@ -137,7 +137,7 @@ public Action:UnrestrictAdminCmd(client, args)
 {
 	if(args < 1)
 	{
-		ReplyToCommand(client, "\x01\x0B\x04[SM] %T", "UnrestrictReply", client);
+		ReplyToCommand(client, "\x01[\x04SM\x01]\x04 %T", "UnrestrictReply", client);
 		return Plugin_Handled;
 	}
 	decl String:weapon[100];
@@ -145,7 +145,7 @@ public Action:UnrestrictAdminCmd(client, args)
 	if(args == 1)
 	{
 		if(!HandleRestrictionCommand(client, weapon, _, -1, true) && !HandleRestrictionCommand(client, weapon, 0, -1, false))
-			ReplyToCommand(client, "\x01\x0B\x04[SM] %T", "UnrestrictReply", client);
+			ReplyToCommand(client, "\x01[\x04SM\x01]\x04 %T", "UnrestrictReply", client);
 		return Plugin_Handled;
 	}
 	new teams = 0;
@@ -161,7 +161,7 @@ public Action:UnrestrictAdminCmd(client, args)
 			teams = CS_TEAM_T;
 		else
 		{
-			ReplyToCommand(client, "\x01\x0B\x04[SM] %T", "InvalidTeam", client);
+			ReplyToCommand(client, "\x01[\x04SM\x01]\x04 %T", "InvalidTeam", client);
 			return Plugin_Handled;
 		}
 	}
@@ -191,7 +191,7 @@ public Action:KnifeRound(client, args)
 {
 	if(g_nextRoundSpecial != RoundType_None)
 	{
-		ReplyToCommand(client, "\x01\x0B\x04[SM] %T", "SpecialRoundAlreadySet", client);
+		ReplyToCommand(client, "\x01[\x04SM\x01]\x04 %T", "SpecialRoundAlreadySet", client);
 		return Plugin_Handled;
 	}
 	ShowActivity2(client, ADMINCOMMANDTAG, "%t", "KnivesRoundSetup");
@@ -203,7 +203,7 @@ public Action:PistolRound(client, args)
 {
 	if(g_nextRoundSpecial != RoundType_None)
 	{
-		ReplyToCommand(client, "\x01\x0B\x04[SM] %T", "SpecialRoundAlreadySet", client);
+		ReplyToCommand(client, "\x01[\x04SM\x01]\x04 %T", "SpecialRoundAlreadySet", client);
 		return Plugin_Handled;
 	}
 	ShowActivity2(client, ADMINCOMMANDTAG, "%t", "PistolRoundSetup");
