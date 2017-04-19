@@ -203,7 +203,7 @@ public Action:RespawnFunc(Handle:timer, any:userid)
 	if(client != 0)
 		RespawnTimer[client] = INVALID_HANDLE;
 		
-	if(client != 0 && GetConVarInt(WarmupRespawn) == 1 && Restrict_IsWarmupRound() && IsClientInGame(client) && !IsPlayerAlive(client) && GetClientTeam(client) >= CS_TEAM_SPECTATOR)
+	if(client != 0 && GetConVarInt(WarmupRespawn) == 1 && Restrict_IsWarmupRound() && IsClientInGame(client) && !IsPlayerAlive(client) && GetClientTeam(client) > CS_TEAM_SPECTATOR)
 	{
 		CS_RespawnPlayer(client);
 	}
