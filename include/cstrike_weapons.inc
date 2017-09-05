@@ -9,71 +9,11 @@
 #include "cstrike.inc"
 #include "string.inc"
 
-static Handle:hWeaponInfoTrie;
+#define CT_TEAM 3
+#define TERROR_TEAM 2
+#define BOTH_TEAMS 1
+#define INVALID_TEAM -1
 
-#define COUNTERTERRORISTTEAM 3
-#define TERRORISTTEAM 2
-#define BOTHTEAMS 0
-#define UNKNOWNTEAM -1
-
-enum WeaponID
-{
-	WEAPON_NONE = 0,
-	WEAPON_P228,
-	WEAPON_GLOCK,
-	WEAPON_SCOUT,
-	WEAPON_HEGRENADE,
-	WEAPON_XM1014,
-	WEAPON_C4,
-	WEAPON_MAC10,
-	WEAPON_AUG,
-	WEAPON_SMOKEGRENADE,
-	WEAPON_ELITE,
-	WEAPON_FIVESEVEN,
-	WEAPON_UMP45,
-	WEAPON_SG550,
-	WEAPON_GALIL,
-	WEAPON_FAMAS,
-	WEAPON_USP,
-	WEAPON_AWP,
-	WEAPON_MP5NAVY,
-	WEAPON_M249,
-	WEAPON_M3,
-	WEAPON_M4A1,
-	WEAPON_TMP,
-	WEAPON_G3SG1,
-	WEAPON_FLASHBANG,
-	WEAPON_DEAGLE,
-	WEAPON_SG552,
-	WEAPON_AK47,
-	WEAPON_KNIFE,
-	WEAPON_P90,
-	WEAPON_SHIELD,
-	WEAPON_KEVLAR,
-	WEAPON_ASSAULTSUIT,
-	WEAPON_NIGHTVISION,
-	WEAPON_GALILAR,
-	WEAPON_BIZON,
-	WEAPON_MAG7,
-	WEAPON_NEGEV,
-	WEAPON_SAWEDOFF,
-	WEAPON_TEC9,
-	WEAPON_TASER,
-	WEAPON_HKP2000,
-	WEAPON_MP7,
-	WEAPON_MP9,
-	WEAPON_NOVA,
-	WEAPON_P250,
-	WEAPON_SCAR17,
-	WEAPON_SCAR20,
-	WEAPON_SG556,
-	WEAPON_SSG08,
-	WEAPON_KNIFE_GG,
-	WEAPON_MOLOTOV,
-	WEAPON_DECOY,
-	WEAPON_INCGRENADE,
-	WEAPON_DEFUSER
-};
 enum WeaponType
 {
 	WeaponTypePistol,
@@ -90,229 +30,228 @@ enum WeaponType
 	WeaponTypeNone,
 	WeaponTypeTaser
 };
+
 enum WeaponSlot
 {
-	SlotNone = -1,
+	SlotInvalid = -1,
 	SlotPrimmary = 0,
 	SlotPistol = 1,
 	SlotKnife = 2,
 	SlotGrenade = 3,
 	SlotC4 = 4,
-	SlotUnknown = 5
-};
-enum WeaponInfo
-{
-	WeaponID:InfoID,
-	WeaponSlot:InfoSlot,
-	WeaponType:InfoType,
-	InfoTeam
 };
 
-new const String:weaponNames[_:WeaponID][] = 
-{ 
-	"none",			"p228",			"glock",		"scout",		
-	"hegrenade",	"xm1014",		"c4",			"mac10",		
-	"aug",			"smokegrenade",	"elite",		"fiveseven",
-	"ump45",		"sg550",		"galil",		"famas",
-	"usp",			"awp",			"mp5navy",		"m249",
-	"m3",			"m4a1",			"tmp",			"g3sg1",
-	"flashbang",	"deagle",		"sg552",		"ak47",
-	"knife",		"p90",			"shield",		"vest",			
-	"vesthelm",		"nvgs",			"galilar",		"bizon",
-	"mag7",			"negev",		"sawedoff",		"tec9",
-	"taser",		"hkp2000",		"mp7",			"mp9",
-	"nova",			"p250",			"scar17",		"scar20",
-	"sg556",		"ssg08",		"knifegg",		"molotov",
-	"decoy",		"incgrenade",	"defuser"
-};
-new const WeaponType:weaponGroups[_:WeaponID] = 
-{ 
-	_:WeaponTypeNone,		_:WeaponTypePistol,		_:WeaponTypePistol,		_:WeaponTypeSniper,	
-	_:WeaponTypeGrenade,	_:WeaponTypeShotgun,	_:WeaponTypeOther,		_:WeaponTypeSMG,
-	_:WeaponTypeRifle,		_:WeaponTypeGrenade,	_:WeaponTypePistol,		_:WeaponTypePistol,
-	_:WeaponTypeSMG,		_:WeaponTypeSniper,		_:WeaponTypeRifle,		_:WeaponTypeRifle,
-	_:WeaponTypePistol,		_:WeaponTypeSniper,		_:WeaponTypeSMG,		_:WeaponTypeMachineGun,
-	_:WeaponTypeShotgun,	_:WeaponTypeRifle,		_:WeaponTypeSMG,		_:WeaponTypeSniper,
-	_:WeaponTypeGrenade,	_:WeaponTypePistol,     _:WeaponTypeRifle,		_:WeaponTypeRifle,
-	_:WeaponTypeKnife,		_:WeaponTypeSMG,		_:WeaponTypeShield,		_:WeaponTypeArmor,
-	_:WeaponTypeArmor,		_:WeaponTypeOther,		_:WeaponTypeRifle,		_:WeaponTypeSMG,
-	_:WeaponTypeShotgun,	_:WeaponTypeMachineGun,	_:WeaponTypeShotgun,	_:WeaponTypePistol,
-	_:WeaponTypeTaser,		_:WeaponTypePistol,		_:WeaponTypeSMG,		_:WeaponTypeSMG,
-	_:WeaponTypeShotgun,	_:WeaponTypePistol,		_:WeaponTypeRifle,		_:WeaponTypeSniper,
-	_:WeaponTypeRifle,		_:WeaponTypeSniper,		_:WeaponTypeKnife,		_:WeaponTypeGrenade,
-	_:WeaponTypeGrenade,	_:WeaponTypeGrenade,	_:WeaponTypeOther
-};
-new const WeaponSlot:weaponSlots[_:WeaponID] = 
-{ 
-	_:SlotUnknown,		_:SlotPistol,		_:SlotPistol,		_:SlotPrimmary,	
-	_:SlotGrenade,		_:SlotPrimmary,		_:SlotC4,			_:SlotPrimmary,
-	_:SlotPrimmary,		_:SlotGrenade,		_:SlotPistol,		_:SlotPistol,
-	_:SlotPrimmary,		_:SlotPrimmary,		_:SlotPrimmary,		_:SlotPrimmary,
-	_:SlotPistol,		_:SlotPrimmary,		_:SlotPrimmary,		_:SlotPrimmary,
-	_:SlotPrimmary,		_:SlotPrimmary,		_:SlotPrimmary,		_:SlotPrimmary,
-	_:SlotGrenade,		_:SlotPistol,		_:SlotPrimmary,		_:SlotPrimmary,
-	_:SlotKnife,		_:SlotPrimmary, 	_:SlotUnknown,		_:SlotNone,
-	_:SlotNone,			_:SlotNone,			_:SlotPrimmary,		_:SlotPrimmary,
-	_:SlotPrimmary,		_:SlotPrimmary,		_:SlotPrimmary,		_:SlotPistol,
-	_:SlotKnife,		_:SlotPistol,		_:SlotPrimmary,		_:SlotPrimmary,
-	_:SlotPrimmary,		_:SlotPistol,		_:SlotPrimmary,		_:SlotPrimmary,
-	_:SlotPrimmary,		_:SlotPrimmary,		_:SlotKnife,		_:SlotGrenade,
-	_:SlotGrenade,		_:SlotGrenade,		_:SlotNone
-};
-new const BuyTeams[_:WeaponID] = 
-{ 
-	UNKNOWNTEAM,			BOTHTEAMS,				BOTHTEAMS,				BOTHTEAMS,	
-	BOTHTEAMS,				BOTHTEAMS,				TERRORISTTEAM,			TERRORISTTEAM,
-	COUNTERTERRORISTTEAM,	BOTHTEAMS,				TERRORISTTEAM,			COUNTERTERRORISTTEAM,
-	BOTHTEAMS,				COUNTERTERRORISTTEAM,	TERRORISTTEAM,			COUNTERTERRORISTTEAM,
-	BOTHTEAMS,				BOTHTEAMS,				BOTHTEAMS,				BOTHTEAMS,
-	BOTHTEAMS,				COUNTERTERRORISTTEAM,	COUNTERTERRORISTTEAM,	TERRORISTTEAM,
-	BOTHTEAMS,				BOTHTEAMS,				TERRORISTTEAM,			TERRORISTTEAM,
-	BOTHTEAMS,				BOTHTEAMS,				UNKNOWNTEAM,			BOTHTEAMS,
-	BOTHTEAMS,				BOTHTEAMS,				TERRORISTTEAM,			BOTHTEAMS,
-	COUNTERTERRORISTTEAM,	BOTHTEAMS,				TERRORISTTEAM,			TERRORISTTEAM,
-	BOTHTEAMS,				BOTHTEAMS,				BOTHTEAMS,				COUNTERTERRORISTTEAM,
-	BOTHTEAMS,				BOTHTEAMS,				UNKNOWNTEAM,			COUNTERTERRORISTTEAM,
-	TERRORISTTEAM,			BOTHTEAMS,				BOTHTEAMS,				TERRORISTTEAM,
-	BOTHTEAMS,				COUNTERTERRORISTTEAM,	COUNTERTERRORISTTEAM
-};
-//-1 None
-// 1 ALL
-// 2 CSS
-// 3 CSGO
-new const AllowedGame[_:WeaponID] = 
+static char cstrike_szClassnames[][] =
 {
-	-1,				2,				1,				2,		
-	1,				1,				1,				1,		
-	1,				1,				1,				1,
-	1,				2,				2,				1,
-	2,				1,				2,				1,
-	2,				1,				2,				1,
-	1,				1,				2,				1,
-	1,				1,				-1,				1,			
-	1,				1,				3,				3,
-	3,				3,				3,				3,
-	3,				3,				3,				3,
-	3,				3,				-1,				3,
-	3,				3,				3,				3,
-	3,				3,				1
+	"weapon_p228",				"weapon_glock",				"weapon_scout",				"weapon_hegrenade",
+	"weapon_xm1014",			"weapon_c4",				"weapon_mac10",				"weapon_aug",		
+	"weapon_smokegrenade",		"weapon_elite",				"weapon_fiveseven",			"weapon_ump45",
+	"weapon_sg550",				"weapon_galil",				"weapon_famas",				"weapon_usp",
+	"weapon_awp",				"weapon_mp5navy",			"weapon_m249",				"weapon_m3",
+	"weapon_m4a1",				"weapon_tmp",				"weapon_g3sg1",				"weapon_flashbang",
+	"weapon_deagle",			"weapon_sg552",				"weapon_ak47",				"weapon_knife",
+	"weapon_p90",				"item_kevlar",				"item_assaultsuit",			"weapon_galilar",
+	"weapon_bizon",				"weapon_mag7",				"weapon_negev",				"weapon_sawedoff",
+	"weapon_tec9",				"weapon_taser",				"weapon_hkp2000",			"weapon_mp7",
+	"weapon_mp9",				"weapon_nova",				"weapon_p250",				"weapon_scar20",
+	"weapon_sg556",				"weapon_ssg08",				"weapon_knifegg",			"weapon_molotov",
+	"weapon_decoy",				"weapon_incgrenade",		"item_defuser",				"item_heavyassaultsuit",
+	"item_cutters",				"weapon_healthshot",		"weapon_knife_t",			"weapon_m4a1_silencer",
+	"weapon_usp_silencer",		"weapon_cz75a",				"weapon_revolver",			"weapon_tagrenade",
+	"weapon_bayonet",			"weapon_knife_flip",		"weapon_knife_gut",			"weapon_knife_karambit",
+	"weapon_knife_m9_bayonet",	"weapon_knife_tactical",	"weapon_knife_falchion",	"weapon_knife_survival_bowie",
+	"weapon_knife_butterfly",	"weapon_knife_push",		"item_nvg"
 };
+
+static const WeaponType cstrike_iWeaponTypes[] =
+{
+	WeaponTypePistol,			WeaponTypePistol,			WeaponTypeSniper,			WeaponTypeGrenade,
+	WeaponTypeShotgun,			WeaponTypeOther,			WeaponTypeSMG,				WeaponTypeRifle,		
+	WeaponTypeGrenade,			WeaponTypePistol,			WeaponTypePistol,			WeaponTypeSMG,
+	WeaponTypeSniper,			WeaponTypeRifle,			WeaponTypeRifle,			WeaponTypePistol,
+	WeaponTypeSniper,			WeaponTypeSMG,				WeaponTypeMachineGun,		WeaponTypeShotgun,
+	WeaponTypeRifle,			WeaponTypeSMG,				WeaponTypeSniper,			WeaponTypeGrenade,
+	WeaponTypePistol,			WeaponTypeRifle,			WeaponTypeRifle,			WeaponTypeKnife,
+	WeaponTypeSMG,				WeaponTypeArmor,			WeaponTypeArmor,			WeaponTypeRifle,
+	WeaponTypeSMG,				WeaponTypeShotgun,			WeaponTypeMachineGun,		WeaponTypeShotgun,
+	WeaponTypePistol,			WeaponTypeTaser,			WeaponTypePistol,			WeaponTypeSMG,
+	WeaponTypeSMG,				WeaponTypeShotgun,			WeaponTypePistol,			WeaponTypeSniper,
+	WeaponTypeRifle,			WeaponTypeSniper,			WeaponTypeKnife,			WeaponTypeGrenade,
+	WeaponTypeGrenade,			WeaponTypeGrenade,			WeaponTypeOther,			WeaponTypeArmor,
+	WeaponTypeOther,			WeaponTypeOther,			WeaponTypeKnife,			WeaponTypeRifle,
+	WeaponTypePistol,			WeaponTypePistol,			WeaponTypePistol,			WeaponTypeGrenade,
+	WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,
+	WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,
+	WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeOther
+};
+
+static const WeaponSlot cstrike_iWeaponSlots[] =
+{
+	SlotPistol,					SlotPistol,					SlotPrimmary,				SlotGrenade,
+	SlotPrimmary,				SlotC4,						SlotPrimmary,				SlotPrimmary,		
+	SlotGrenade,				SlotPistol,					SlotPistol,					SlotPrimmary,
+	SlotPrimmary,				SlotPrimmary,				SlotPrimmary,				SlotPistol,
+	SlotPrimmary,				SlotPrimmary,				SlotPrimmary,				SlotPrimmary,
+	SlotPrimmary,				SlotPrimmary,				SlotPrimmary,				SlotGrenade,
+	SlotPistol,					SlotPrimmary,				SlotPrimmary,				SlotKnife,
+	SlotPrimmary,				SlotInvalid,				SlotInvalid,				SlotPrimmary,
+	SlotPrimmary,				SlotPrimmary,				SlotPrimmary,				SlotPrimmary,
+	SlotPistol,					SlotKnife,					SlotPistol,					SlotPrimmary,
+	SlotPrimmary,				SlotPrimmary,				SlotPistol,					SlotPrimmary,
+	SlotPrimmary,				SlotPrimmary,				SlotKnife,					SlotGrenade,
+	SlotGrenade,				SlotGrenade,				SlotInvalid,				SlotInvalid,
+	SlotInvalid,				SlotC4,						SlotKnife,					SlotPrimmary,
+	SlotPistol,					SlotPistol,					SlotPistol,					SlotGrenade,
+	SlotKnife,					SlotKnife,					SlotKnife,					SlotKnife,
+	SlotKnife,					SlotKnife,					SlotKnife,					SlotKnife,
+	SlotKnife,					SlotKnife,					SlotInvalid
+};
+
+static const int cstrike_iBuyTeams[] =
+{
+	BOTH_TEAMS,					TERROR_TEAM,				BOTH_TEAMS,					BOTH_TEAMS,
+	BOTH_TEAMS,					TERROR_TEAM,				TERROR_TEAM,				CT_TEAM,		
+	BOTH_TEAMS,					TERROR_TEAM,				CT_TEAM,					BOTH_TEAMS,
+	CT_TEAM,					TERROR_TEAM,				CT_TEAM,					CT_TEAM,
+	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,
+	CT_TEAM,					CT_TEAM,					TERROR_TEAM,				BOTH_TEAMS,
+	BOTH_TEAMS,					TERROR_TEAM,				TERROR_TEAM,				BOTH_TEAMS,
+	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,					TERROR_TEAM,
+	BOTH_TEAMS,					CT_TEAM,					BOTH_TEAMS,					TERROR_TEAM,
+	TERROR_TEAM,				BOTH_TEAMS,					CT_TEAM,					BOTH_TEAMS,
+	CT_TEAM,					BOTH_TEAMS,					BOTH_TEAMS,					CT_TEAM,
+	TERROR_TEAM,				BOTH_TEAMS,					BOTH_TEAMS,					TERROR_TEAM,
+	BOTH_TEAMS,					CT_TEAM,					CT_TEAM,					BOTH_TEAMS,
+	CT_TEAM,					BOTH_TEAMS,					TERROR_TEAM,				CT_TEAM,
+	CT_TEAM,					BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,
+	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,
+	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,
+	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS
+};
+
+enum TrieWeaponInfo
+{
+	TrieWeapon_Slot = 0,
+	TrieWeapon_BuyTeam,
+	TrieWeapon_WeaponType,
+	TrieWeapon_ArryIdx,
+	TrieWeapon_Max
+};
+
+static Handle hWeaponIDToInfoTrie = INVALID_HANDLE;
+
 stock CSWeapons_Init()
 {
-	if(hWeaponInfoTrie == INVALID_HANDLE)
+	if(hWeaponIDToInfoTrie == INVALID_HANDLE)
 	{
 		InitWeaponInfoTrie();
 	}
 }
+
 stock InitWeaponInfoTrie()
 {
-	hWeaponInfoTrie = CreateTrie();
-	new info[WeaponInfo];
-	for(new i = 0; i < _:WeaponID; i++)
+	hWeaponIDToInfoTrie = CreateTrie();
+	
+	int info[TrieWeapon_Max];
+	
+	for(int i = 0; i < sizeof(cstrike_szClassnames); i++)
 	{
-		info[InfoID] = WeaponID:i;
-		info[InfoSlot] = weaponSlots[WeaponID:i];
-		info[InfoType] = weaponGroups[WeaponID:i];
+		CSWeaponID weaponID = CS_AliasToWeaponID(cstrike_szClassnames[i]);
 		
-		if(WeaponID:i == WEAPON_ELITE && GetEngineVersion() == Engine_CSGO)
+		if(weaponID == CSWeapon_NONE)
+			continue;
+		
+		info[TrieWeapon_Slot] = view_as<int>(cstrike_iWeaponSlots[i]);
+		info[TrieWeapon_BuyTeam] = view_as<int>(cstrike_iBuyTeams[i]);
+		info[TrieWeapon_WeaponType] = view_as<int>(cstrike_iWeaponTypes[i]);
+		info[TrieWeapon_ArryIdx] = i;
+		
+		if(GetEngineVersion() == Engine_CSGO && weaponID == CSWeapon_ELITE)
 		{
-			info[InfoTeam] = BOTHTEAMS;//CSGO elites are for both teams.
-		}
-		else
-		{
-			info[InfoTeam] = BuyTeams[WeaponID:i];
+			info[TrieWeapon_BuyTeam] = view_as<int>(BOTH_TEAMS);
 		}
 		
-		SetTrieArray(hWeaponInfoTrie, weaponNames[WeaponID:i], info[0], _:WeaponInfo);
+		char key[10];
+		IntToString(view_as<int>(weaponID), key, sizeof(key));
+		
+		SetTrieArray(hWeaponIDToInfoTrie, key, info[0], view_as<int>(TrieWeapon_Max));
 	}
 }
-stock WeaponID:GetWeaponID(const String:weapon[])
+
+stock GetWeaponInfoArrySize()
 {
-	decl info[WeaponInfo];
-	if(GetWeaponInfo(weapon, info))
-		return info[InfoID];
-	
-	return WEAPON_NONE;
+	return GetTrieSize(hWeaponIDToInfoTrie);
 }
-stock WeaponSlot:GetWeaponSlot(const String:weapon[])
+
+static stock bool GetWeaponInfoFromID(CSWeaponID weaponID, int arry[TrieWeapon_Max])
 {
-	decl info[WeaponInfo];
-	if(GetWeaponInfo(weapon, info))
-		return info[InfoSlot];
-	
-	return SlotUnknown;
+	char key[10];
+	IntToString(view_as<int>(weaponID), key, sizeof(key));
+		
+	return GetTrieArray(hWeaponIDToInfoTrie, key, arry[0], view_as<int>(TrieWeapon_Max));
 }
-stock WeaponType:GetWeaponType(const String:weapon[])
+
+stock int GetWeaponBuyTeam(CSWeaponID weaponID)
 {
-	decl info[WeaponInfo];
-	if(GetWeaponInfo(weapon, info))
-		return info[InfoType];
+	int info[TrieWeapon_Max];
+	
+	if(GetWeaponInfoFromID(weaponID, info))
+	{
+		return info[TrieWeapon_BuyTeam];
+	}
+	
+	return INVALID_TEAM;
+}
+
+stock WeaponType GetWeaponType(CSWeaponID weaponID)
+{
+	int info[TrieWeapon_Max];
+	
+	if(GetWeaponInfoFromID(weaponID, info))
+	{
+		return view_as<WeaponType>(info[TrieWeapon_WeaponType]);
+	}
 	
 	return WeaponTypeNone;
 }
-stock bool:CanTeamBuyWeapon(team, const String:weapon[])
-{
-	if(team < TERRORISTTEAM || team > COUNTERTERRORISTTEAM)
-		return true;
-	
-	decl info[WeaponInfo];
-	if(GetWeaponInfo(weapon, info))
-	{	
-		if(info[InfoTeam] == 0 || info[InfoTeam] == team)
-			return true;
-		
-		return false;
-	}
-	return true;
-}
-stock GetWeaponPriceFromName(client, const String:weapon[], bool:defaultprice)
-{
-	new WeaponID:id = GetWeaponID(weapon);
-	
-	return GetWeaponPrice(client, id, defaultprice);
-}
-stock GetWeaponPrice(client, WeaponID:id, bool:defaultprice=false)
-{	
-	if(id > WEAPON_DEFUSER || id <= WEAPON_NONE)
-		return 0;
-	if(id == WEAPON_DEFUSER && GetEngineVersion() != Engine_CSGO) //Only assume on CSS
-		return 200;
-	
-	return CS_GetWeaponPrice(client, CSWeaponID:_:id, defaultprice);
-}
-stock WeaponSlot:GetSlotFromWeaponID(WeaponID:id)
-{
-	return weaponSlots[_:id];
-}
-stock WeaponType:GetWeaponTypeFromID(WeaponID:id)
-{
-	return weaponGroups[_:id];
-}
-stock GetAllowedGameForWeapon(WeaponID:id)
-{
-	return AllowedGame[_:id];
-}
-stock bool:GetWeaponInfo(const String:weapon[], info[WeaponInfo])
-{
-	if(hWeaponInfoTrie == INVALID_HANDLE)
-		InitWeaponInfoTrie();
-	
-	decl String:CheckWeapon[64];
-	strcopy(CheckWeapon, sizeof(CheckWeapon), weapon);
-	new len = strlen(weapon);
-	for(new i = 0; i < len; i++)
-	{
-		CheckWeapon[i] = CharToLower(weapon[i]);
-	}
 
-	if(GetTrieArray(hWeaponInfoTrie, CheckWeapon, info[0], _:WeaponInfo))
-		return true;
+stock WeaponSlot GetWeaponSlot(CSWeaponID weaponID)
+{
+	int info[TrieWeapon_Max];
 	
-	if(ReplaceString(CheckWeapon, sizeof(CheckWeapon), "weapon_", "", false) == 1 || ReplaceString(CheckWeapon, sizeof(CheckWeapon), "item_", "", false) == 1)
+	if(GetWeaponInfoFromID(weaponID, info))
 	{
-		if(GetTrieArray(hWeaponInfoTrie, CheckWeapon, info[0], _:WeaponInfo))
-			return true;
+		return view_as<WeaponSlot>(info[TrieWeapon_Slot]);
+	}
+	
+	return SlotInvalid;
+}
+
+stock bool GetWeaponClassname(CSWeaponID weaponID, char [] buffer, int size)
+{
+	int info[TrieWeapon_Max];
+	
+	if(GetWeaponInfoFromID(weaponID, info))
+	{
+		strcopy(buffer, size, cstrike_szClassnames[info[TrieWeapon_ArryIdx]]);
+		return true;
 	}
 	
 	return false;
+}
+
+stock CSWeaponID GetWeaponIDFromSnapshot(int index)
+{	
+	if(index < 0 || index >= GetTrieSize(hWeaponIDToInfoTrie))
+		return CSWeapon_NONE;
+	
+	Handle hTemp = CreateTrieSnapshot(hWeaponIDToInfoTrie);
+	
+	char key[10];
+	
+	GetTrieSnapshotKey(hTemp, index, key, sizeof(key));
+	
+	delete hTemp;
+	
+	return view_as<CSWeaponID>(StringToInt(key));
 }
