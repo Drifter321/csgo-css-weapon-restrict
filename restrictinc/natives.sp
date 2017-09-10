@@ -5,7 +5,7 @@ static Handle hWarmupStartForward = null;
 static Handle hWarmupEndForward = null;
 
 #if defined PERPLAYER
-static bool g_bOverrideValues[CSWeapon_MAX_WEAPONS][CVarTeam_MAX];
+static bool g_bOverrideValues[CSWeapon_MAX_WEAPONS_NO_KNIFES][CVarTeam_MAX];
 #endif
 
 enum
@@ -409,7 +409,12 @@ public int Native_GetWeaponIDExtended(Handle hPlugin, int iNumParams)
 	CSWeaponID id = CS_AliasToWeaponID(szWeapon);
 	
 	if(id != CSWeapon_NONE || g_iEngineVersion == Engine_CSGO) // CS:GO has no aliases nor does it call WeaponIDFromClassname()
+	{
+		if(CSWeapons_GetWeaponType(id) == WeaponTypeKnife)
+			return  view_as<int>(CSWeapon_KNIFE);
+		
 		return view_as<int>(id);
+	}
 	
 	// CS:S has aliases and allows for bizzare buy strings such as buy myamazingak47;
 	char szAlias[WEAPONARRAYSIZE];
@@ -421,7 +426,7 @@ public int Native_GetWeaponIDExtended(Handle hPlugin, int iNumParams)
 		return view_as<int>(id);
 	
 	//Oh god...
-	for(int i = 0; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
+	for(int i = 0; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
 	{
 		if(CSWeapons_IsValidID(view_as<CSWeaponID>(i), true))
 		{
@@ -800,7 +805,7 @@ public int Native_SetGroupRestriction(Handle hPlugin, int iNumParams)
 		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon group index %d is invalid.", type);
 	}
 	
-	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
+	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
 	{
 		CSWeaponID id = view_as<CSWeaponID>(i);
 		
@@ -820,7 +825,7 @@ public int Native_CheckPlayerWeapons(Handle hPlugin, int iNumParams)
 	int iVal;
 	int iCount;
 	
-	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
+	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
     {
 		CSWeaponID id = view_as<CSWeaponID>(i);
 		

@@ -27,7 +27,7 @@ enum
 	CVarTeam_MAX
 }
 
-ConVar hRestrictCVars[CSWeapon_MAX_WEAPONS][CVarTeam_MAX];
+ConVar hRestrictCVars[CSWeapon_MAX_WEAPONS_NO_KNIFES][CVarTeam_MAX];
 ConVar hVersion = null;
 
 ConVar hMaxMoney = null;
@@ -48,7 +48,7 @@ void CreateConVars()
 		char cvar[128];
 		char desc[256];
 	
-		for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
+		for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
 		{
 			if(!CSWeapons_IsValidID(view_as<CSWeaponID>(i), true))
 			{

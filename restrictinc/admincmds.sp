@@ -24,7 +24,7 @@ stock bool HandleRestrictionCommand(int client, char [] szWeapon, int iTeam = BO
 	
 	if(StrEqual(szWeapon, "@all", false) || StrEqual(szWeapon, "all", false))
 	{
-		for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
+		for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
 		{
 			id = view_as<CSWeaponID>(i);
 			

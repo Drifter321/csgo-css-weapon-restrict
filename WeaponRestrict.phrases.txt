@@ -192,10 +192,6 @@
 	{
 		"en"		"SSG08"
 	}
-	"knifegg"
-	{
-		"en"		"Gungame Knife"
-	}
 	"molotov"
 	{
 		"en"		"Molotov"
@@ -220,10 +216,6 @@
 	{
 		"en"		"Healthshot"
 	}
-	"knife_t"
-	{
-		"en"		"Terrorist Knife"
-	}
 	"m4a1_silencer"
 	{
 		"en"		"M4A1-S"
@@ -243,46 +235,6 @@
 	"tagrenade"
 	{
 		"en"		"Tactical Awareness Grenade"
-	}
-	"knife_flip"
-	{
-		"en"		"Flip Knife"
-	}
-	"bayonet"
-	{
-		"en"		"Bayonet"
-	}
-	"knife_m9_bayonet"
-	{
-		"en"		"M9 Bayonet"
-	}
-	"knife_karambit"
-	{
-		"en"		"Karambit"
-	}
-	"knife_tactical"
-	{
-		"en"		"Tactical Knife"
-	}
-	"knife_falchion"
-	{
-		"en"		"Falchion"
-	}
-	"knife_survival_bowie"
-	{
-		"en"		"Bowie Knife"
-	}
-	"knife_butterfly"
-	{
-		"en"		"Butterfly Knife"
-	}
-	"knife_push"
-	{
-		"en"		"Shadow Daggers"
-	}
-	"knife_gut"
-	{
-		"en"		"Gut Knife"
 	}
 	"pistols"
 	{

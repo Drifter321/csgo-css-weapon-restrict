@@ -46,9 +46,9 @@ public void OnEntityCreated(int entity, const char [] classname)
 	if(hWeaponTracker == null)
 		return;
 	
-	CSWeaponID id = CS_AliasToWeaponID(classname);
+	CSWeaponID id = Restrict_GetWeaponIDExtended(classname);
 	
-	if(g_iEngineVersion == Engine_CSGO && CSWeapons_IsValidID(id, true))
+	if(g_iEngineVersion == Engine_CSGO && CSWeapons_IsValidID(id, true) && id != CSWeapon_KNIFE)
 	{
 		SDKHook(entity, SDKHook_SpawnPost, SpawnPost); //Correct it if possiible
 	}

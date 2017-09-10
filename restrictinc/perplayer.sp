@@ -1,9 +1,9 @@
-static int g_iDefaultValues[CSWeapon_MAX_WEAPONS][CVarTeam_MAX];
+static int g_iDefaultValues[CSWeapon_MAX_WEAPONS_NO_KNIFES][CVarTeam_MAX];
 static CSWeaponID g_iCurrentID = CSWeapon_NONE;
 static bool g_bIsFirstKey = true;
 static int g_iLastVal = -1;
 static int g_iLastIndex = 0;
-static int g_iPerPlayer[CSWeapon_MAX_WEAPONS][MAXPLAYERS+1];
+static int g_iPerPlayer[CSWeapon_MAX_WEAPONS_NO_KNIFES][MAXPLAYERS+1];
 bool g_bPerPlayerReady = false;
 
 enum
@@ -14,7 +14,7 @@ enum
 
 void PerPlayerInit()
 {
-	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
+	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
 	{
 		if(!CSWeapons_IsValidID(view_as<CSWeaponID>(i), true))
 		{
@@ -28,7 +28,7 @@ void PerPlayerInit()
 		}
 	}
 	
-	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
+	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
 	{
 		if(g_iPerPlayer[i][0] == InvalidWeapon)
 			continue;
@@ -74,7 +74,7 @@ public Action Perplayer_Debug(int argc)
 {
 	int last;
 	int lastval;
-	for(int i = 0; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
+	for(int i = 0; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
 	{
 		if(g_iPerPlayer[i][0] == InvalidWeapon || g_iPerPlayer[i][0] == UninitializedWeapon)
 			continue;
@@ -189,7 +189,7 @@ void CheckPerPlayer()
 	
 	bool bPerPlayer = hPerPlayerRestrict.BoolValue;
 	
-	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
+	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
 	{
 		if(g_iPerPlayer[i][0] == InvalidWeapon)
 			continue;

@@ -261,9 +261,11 @@ stock int CSWeapons_GetWeaponPrice(int client, CSWeaponID weaponID, bool default
 	return CS_GetWeaponPrice(client, weaponID, defaultprice);
 }
 
-stock bool CSWeapons_IsValidID(CSWeaponID weaponID, bool defuserValid = false)
+stock bool CSWeapons_IsValidID(CSWeaponID weaponID, bool defuserValid = false, bool allKnifesValid = false)
 {
-	if(weaponID == CSWeapon_DEFUSER && defuserValid) //This is for CS:S
+	if(!allKnifesValid && weaponID != CSWeapon_KNIFE && CSWeapons_GetWeaponType(weaponID) == WeaponTypeKnife)
+		return false;
+	else if(defuserValid && weaponID == CSWeapon_DEFUSER) //This is for CS:S
 		return true;
 	
 	return CS_IsValidWeaponID(weaponID);

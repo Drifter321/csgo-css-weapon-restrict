@@ -201,7 +201,7 @@ stock bool IsGoingToPickup(int client, CSWeaponID id)
 
 stock void ClearOverride()
 {
-	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
+	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
 	{
 		CSWeaponID id = view_as<CSWeaponID>(i);
 		

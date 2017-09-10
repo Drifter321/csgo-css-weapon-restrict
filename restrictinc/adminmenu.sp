@@ -345,7 +345,7 @@ stock void HandleMenuGroupRestriction(int client, WeaponType group, int amount, 
 {
 	if(group == WeaponTypeNone)
 	{
-		for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
+		for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
 		{
 			if(!CSWeapons_IsValidID(view_as<CSWeaponID>(i), true))
 				continue;
