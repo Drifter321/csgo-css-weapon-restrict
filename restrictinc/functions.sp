@@ -1,42 +1,50 @@
-stock WeaponType:GetTypeGroup(const String:weapon[])
+stock WeaponType GetTypeGroup(const char [] szGroupName)
 {
-	for(new i = 0; i < MAXWEAPONGROUPS; i++)
+	for(int i = 0; i < sizeof(g_WeaponGroupNames); i++)
 	{
-		if(StrEqual(weapon, g_WeaponGroupNames[i]))
-			return WeaponType:i;
+		if(StrEqual(szGroupName, g_WeaponGroupNames[i]))
+			return view_as<WeaponType>(i);
 	}
 	return WeaponTypeNone;
 }
-stock bool:RunFile(String:file[])
+
+stock bool RunFile(const char [] szFile)
 {
-	if(!FileExists(file))
+	if(!FileExists(szFile))
 	{
 		return false;
 	}
-	new Handle:FileHandle = OpenFile(file, "r");
-	new String:Command[50];
-	while(!IsEndOfFile(FileHandle))
+	
+	File hFile = OpenFile(szFile, "r");
+	
+	char szCommand[128];
+	
+	while(!hFile.EndOfFile())
 	{
-		ReadFileLine(FileHandle, Command, sizeof(Command));
-		TrimString(Command);
-		if(strncmp(Command, "//", 2) != 0 && strlen(Command) != 0)
+		hFile.ReadLine(szCommand, sizeof(szCommand));
+		TrimString(szCommand);
+		if(strncmp(szCommand, "//", 2) != 0 && strlen(szCommand) != 0)
 		{
-			ServerCommand("%s", Command);
+			ServerCommand("%s", szCommand);
 		}
 	}
-	CloseHandle(FileHandle);
+	
+	delete hFile;
+	
 	return true;
 }
-stock GetCurrentMapEx(String:map[], size)
+
+stock void GetCurrentMapEx(char [] szMapBuffer, int iSize)
 {
-	GetCurrentMap(map, size);
+	GetCurrentMap(szMapBuffer, iSize);
 	
-	new index = -1;
-	for(new i = 0; i < strlen(map); i++)
+	int index = -1;
+	
+	for(int i = 0; i < strlen(szMapBuffer); i++)
 	{
-		if(StrContains(map[i], "/") != -1 || StrContains(map[i], "\\") != -1)
+		if(StrContains(szMapBuffer[i], "/") != -1 || StrContains(szMapBuffer[i], "\\") != -1)
 		{
-			if(i != strlen(map) - 1)
+			if(i != strlen(szMapBuffer) - 1)
 				index = i;
 		}
 		else
@@ -44,50 +52,69 @@ stock GetCurrentMapEx(String:map[], size)
 			break;
 		}
 	}
-	strcopy(map, size, map[index+1]);
+	strcopy(szMapBuffer, iSize, szMapBuffer[index+1]);
 }
-stock RemoveForSpecialRound(client)
+
+stock void RemoveForSpecialRound(int client)
 {
-	new WeaponID:weapon = WEAPON_NONE;
-	new ent = 0;
+	static int iMyWeaponsMax = -1;
+	
+	if(iMyWeaponsMax == -1)
+	{
+		if(IsClientInGame(client))
+		{
+			iMyWeaponsMax = GetEntPropArraySize(client, Prop_Send, "m_hMyWeapons");
+		}
+		
+		if(iMyWeaponsMax == -1)
+		{
+			LogError("Failed to get m_hMyWeapons array size");
+			return;
+		}
+	}
+	
+	CSWeaponID id = CSWeapon_NONE;
+	
+	int iEnt;
+	
 	if(g_currentRoundSpecial == RoundType_Pistol)
 	{
-		weapon = Restrict_GetWeaponIDFromSlot(client, SlotPrimmary);
-		if(weapon != WEAPON_NONE)
+		id = Restrict_GetWeaponIDFromSlot(client, SlotPrimmary);
+		if(id != CSWeapon_NONE)
 		{
-			ent = GetPlayerWeaponSlot(client, _:SlotPrimmary);
-			Restrict_RefundMoney(client, weapon);
-			Restrict_RemoveWeaponDrop(client, ent);
+			iEnt = GetPlayerWeaponSlot(client, view_as<int>(SlotPrimmary));
+			Restrict_RefundMoney(client, id);
+			Restrict_RemoveWeaponDrop(client, iEnt);
 		}
 	}
 	else if(g_currentRoundSpecial == RoundType_Knife)
 	{
-		weapon = Restrict_GetWeaponIDFromSlot(client, SlotPrimmary);
-		if(weapon != WEAPON_NONE)
+		id = Restrict_GetWeaponIDFromSlot(client, SlotPrimmary);
+		if(id != CSWeapon_NONE)
 		{
-			ent = GetPlayerWeaponSlot(client, _:SlotPrimmary);
-			Restrict_RefundMoney(client, weapon);
-			Restrict_RemoveWeaponDrop(client, ent);
+			iEnt = GetPlayerWeaponSlot(client, view_as<int>(SlotPrimmary));
+			Restrict_RefundMoney(client, id);
+			Restrict_RemoveWeaponDrop(client, iEnt);
 		}
-		weapon = Restrict_GetWeaponIDFromSlot(client, SlotPistol);
-		if(weapon != WEAPON_NONE)
+		id = Restrict_GetWeaponIDFromSlot(client, SlotPistol);
+		if(id != CSWeapon_NONE)
 		{
-			ent = GetPlayerWeaponSlot(client, _:SlotPistol);
-			Restrict_RefundMoney(client, weapon);
-			Restrict_RemoveWeaponDrop(client, ent);
+			iEnt = GetPlayerWeaponSlot(client, view_as<int>(SlotPistol));
+			Restrict_RefundMoney(client, id);
+			Restrict_RemoveWeaponDrop(client, iEnt);
 		}
-		new index = 0;
-		for(new x = 0; x <= g_iMyWeaponsMax; x++)
+		int index = 0;
+		for(int x = 0; x < iMyWeaponsMax; x++)
 		{
 			index = GetEntPropEnt(client, Prop_Send, "m_hMyWeapons", x);
 			if(index && IsValidEdict(index))
 			{
-				weapon = GetWeaponIDFromEnt(index);
-				if(weapon != WEAPON_NONE && GetSlotFromWeaponID(weapon) == SlotGrenade)
+				id = GetWeaponIDFromEnt(index);
+				if(id != CSWeapon_NONE && CSWeapons_GetWeaponSlot(id) == SlotGrenade)
 				{
-					new count = Restrict_GetClientGrenadeCount(client, weapon);
-					for(new i = 1; i <= count; i++)
-						Restrict_RefundMoney(client, weapon);
+					int iCount = Restrict_GetClientGrenadeCount(client, id);
+					for(int i = 1; i <= iCount; i++)
+						Restrict_RefundMoney(client, id);
 					
 					Restrict_RemoveWeaponDrop(client, index);
 				}
@@ -95,18 +122,21 @@ stock RemoveForSpecialRound(client)
 		}
 	}
 }
-stock GetWeaponRestrictSound()
+
+stock void GetWeaponRestrictSound()
 {
 	g_bRestrictSound = false;
-	new String:file[PLATFORM_MAX_PATH];
-	GetConVarString(RestrictSound, file, sizeof(file));
-	if(strlen(file) > 0 && FileExists(file, true))
+	char szFile[PLATFORM_MAX_PATH];
+	
+	hRestrictSound.GetString(szFile, sizeof(szFile));
+	
+	if(strlen(szFile) > 0 && FileExists(szFile, true))
 	{
-		AddFileToDownloadsTable(file);
-		if(StrContains(file, "sound/", false) == 0)
+		AddFileToDownloadsTable(szFile);
+		if(StrContains(szFile, "sound/", false) == 0)
 		{
-			ReplaceStringEx(file, sizeof(file), "sound/", "", -1, -1, false);
-			strcopy(g_sCachedSound, sizeof(g_sCachedSound), file);
+			ReplaceStringEx(szFile, sizeof(szFile), "sound/", "", -1, -1, false);
+			strcopy(g_sCachedSound, sizeof(g_sCachedSound), szFile);
 		}
 		if(PrecacheSound(g_sCachedSound, true))
 		{
@@ -114,64 +144,84 @@ stock GetWeaponRestrictSound()
 		}
 		else
 		{
-			LogError("Failed to precache restrict sound please make sure path is correct in %s and sound is in the sounds folder", file);
+			LogError("Failed to precache restrict sound please make sure path is correct in %s and sound is in the sounds folder", szFile);
 		}
 	}
-	else if(strlen(file) > 0)
+	else if(strlen(szFile) > 0)
 	{
-		LogError("Sound %s dosnt exist", file);
+		LogError("Sound %s dosnt exist", szFile);
 	}
 }
-stock IsGoingToPickup(client, WeaponID:id)
+
+stock bool IsGoingToPickup(int client, CSWeaponID id)
 {
-	new WeaponSlot:slot = GetSlotFromWeaponID(id);
+	WeaponSlot slot = CSWeapons_GetWeaponSlot(id);
 	
-	if(IsValidWeaponSlot(slot))
+	if(slot != SlotInvalid && slot != SlotNone)
 	{
 		if(slot == SlotGrenade)
 		{
-			new count = Restrict_GetClientGrenadeCount(client, id);
-			if(hHeAmmo == INVALID_HANDLE || hFlashAmmo == INVALID_HANDLE || hSmokeAmmo == INVALID_HANDLE)
+			int iCount = Restrict_GetClientGrenadeCount(client, id);
+			
+			if(g_iEngineVersion == Engine_CSS)
 			{
-				if(((id == WEAPON_HEGRENADE || id == WEAPON_SMOKEGRENADE) && count == 0) || (id == WEAPON_FLASHBANG && count < 2))
-					return true;
+				if(hHeAmmo == null || hFlashAmmo == null || hSmokeAmmo == null)
+				{
+					if(((id == CSWeapon_HEGRENADE || id == CSWeapon_SMOKEGRENADE) && iCount == 0) || (id == CSWeapon_FLASHBANG && iCount < 2))
+						return true;
+				}
+				else
+				{
+					if((id == CSWeapon_HEGRENADE && iCount < hHeAmmo.IntValue) || (id == CSWeapon_SMOKEGRENADE && iCount < hSmokeAmmo.IntValue) || (id == CSWeapon_FLASHBANG && iCount < hFlashAmmo.IntValue))
+						return true;
+				}
 			}
-			else
+			else if(g_iEngineVersion == Engine_CSGO)
 			{
-				if((id == WEAPON_HEGRENADE && count < GetConVarInt(hHeAmmo)) || (id == WEAPON_SMOKEGRENADE && count < GetConVarInt(hSmokeAmmo)) || (id == WEAPON_FLASHBANG && count < GetConVarInt(hSmokeAmmo)))
+				int iFlashAmmo = 1;
+				
+				if(hFlashAmmo != null)
+				{
+					iFlashAmmo = hFlashAmmo.IntValue;
+				}
+				
+				if(((id == CSWeapon_HEGRENADE || id == CSWeapon_SMOKEGRENADE || id == CSWeapon_MOLOTOV || id == CSWeapon_DECOY || id == CSWeapon_INCGRENADE || id == CSWeapon_TAGGRENADE) && iCount == 0) || (id == CSWeapon_FLASHBANG && iCount < iFlashAmmo))
 					return true;
 			}
 		}
-		else //Only 1 check needed
+		else
 		{
-			new weapon = GetPlayerWeaponSlot(client, _:slot);
-			if(weapon == -1)
+			int iWeapon = GetPlayerWeaponSlot(client, view_as<int>(slot));
+			if(iWeapon == -1)
 				return true;
 		}
 	}
 	return false;
 }
-stock ClearOverride()
+
+stock void ClearOverride()
 {
-	for(new i = 1; i < _:WeaponID; i++)
+	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
 	{
-		Restrict_RemoveFromOverride(CS_TEAM_T, WeaponID:i);
-		Restrict_RemoveFromOverride(CS_TEAM_CT, WeaponID:i);
+		CSWeaponID id = view_as<CSWeaponID>(i);
+		
+		if(!CSWeapons_IsValidID(id, true))
+			continue;
+		
+		Restrict_RemoveFromOverride(CS_TEAM_T, id);
+		Restrict_RemoveFromOverride(CS_TEAM_CT, id);
 	}
 }
-stock GetMaxGrenades()
+stock int GetMaxGrenades()
 {
-	if(hHeAmmo == INVALID_HANDLE || hFlashAmmo == INVALID_HANDLE || hSmokeAmmo == INVALID_HANDLE)
-	{
-		return 2;//Return flash count
-	}
-	new hecount = GetConVarInt(hHeAmmo);
-	new flashcount = GetConVarInt(hFlashAmmo);
-	new smokecount = GetConVarInt(hSmokeAmmo);
+	int iFlashAmmo = hFlashAmmo == null ? 2 : hFlashAmmo.IntValue;
+	int iHeAmmo = hHeAmmo == null ? 1 : hHeAmmo.IntValue;
+	int iSmokeAmmo = hSmokeAmmo == null ? 1 : hSmokeAmmo.IntValue;
 	
-	return (hecount > flashcount)? ((hecount > smokecount)? hecount:smokecount):((flashcount > smokecount)? flashcount:smokecount);
+	return (iHeAmmo > iFlashAmmo) ? ((iHeAmmo > iSmokeAmmo) ? iHeAmmo : iSmokeAmmo) : ((iFlashAmmo > iSmokeAmmo) ? iFlashAmmo : iSmokeAmmo);
 }
-stock bool:IsValidClient(client, isZeroValid=false)
+
+stock bool IsValidClient(int client, bool isZeroValid=false)
 {
 	if(isZeroValid && client == 0)
 		return true;
@@ -181,14 +231,8 @@ stock bool:IsValidClient(client, isZeroValid=false)
 	
 	return true;
 }
-stock bool:IsValidWeaponID(WeaponID:id)
-{
-	if(_:id <= _:WEAPON_NONE || _:id >= _:WeaponID)
-		return false;
-	
-	return true;
-}
-stock bool:IsValidTeam(team, isSpecValid=false)
+
+stock bool IsValidTeam(int team, bool isSpecValid=false)
 {
 	if(isSpecValid && (team == CS_TEAM_NONE || team == CS_TEAM_SPECTATOR))
 		return true;
@@ -197,13 +241,8 @@ stock bool:IsValidTeam(team, isSpecValid=false)
 	
 	return true;
 }
-stock bool:IsValidWeaponSlot(WeaponSlot:slot)
-{
-	if(slot < SlotPrimmary || slot > SlotC4)
-		return false;
-	return true;
-}
-stock bool:IsValidWeaponGroup(WeaponType:group)
+
+stock bool IsValidWeaponGroup(WeaponType group)
 {
 	if(group > WeaponTypeOther || group < WeaponTypePistol)
 		return false;

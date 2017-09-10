@@ -1,92 +1,107 @@
 //Keeps track of weapons created and saves their id for easy look up. Requires SDKHooks.
-new Handle:hWeaponsIDArray = INVALID_HANDLE;
-new Handle:hWeaponEntityArray = INVALID_HANDLE;
-
-stock CheckWeaponArrays()
+enum
 {
-	if(hWeaponsIDArray == INVALID_HANDLE)
-		hWeaponsIDArray = CreateArray();
+	Tracker_EntityIndex = 0,
+	Tracker_WeaponIDIndex,
+	Tracker_MAXIndex
+};
+
+static ArrayList hWeaponTracker = null;
+
+void CheckWeaponArrays()
+{
+	if(hWeaponTracker == null)
+		hWeaponTracker = new ArrayList(Tracker_MAXIndex);
 	else
-		ClearArray(hWeaponsIDArray);
-		
-	if(hWeaponEntityArray == INVALID_HANDLE)
-		hWeaponEntityArray = CreateArray();
-	else
-		ClearArray(hWeaponEntityArray);
+		hWeaponTracker.Clear();
 	
-	decl String:name[WEAPONARRAYSIZE];
-	for (new i = MaxClients; i <= GetMaxEntities(); i++)
+	//Add any items that already are spawned
+	int iMaxEntities = GetMaxEntities();
+	
+	char szWeaponName[WEAPONARRAYSIZE];
+	
+	int aTracker[Tracker_MAXIndex];
+	
+	for(int i = MaxClients; i <= iMaxEntities; i++)
 	{
-		if (IsValidEdict(i) && IsValidEntity(i))
+		if(IsValidEdict(i))
 		{
-			GetEdictClassname(i, name, sizeof(name));
-			if((strncmp(name, "weapon_", 7, false) == 0 || strncmp(name, "item_", 5, false) == 0))
+			GetEdictClassname(i, szWeaponName, sizeof(szWeaponName));
+			
+			CSWeaponID id = CS_AliasToWeaponID(szWeaponName);
+			
+			if(CSWeapons_IsValidID(id, true) && hWeaponTracker.FindValue(i, Tracker_EntityIndex) == -1)
 			{
-				new WeaponID:id = Restrict_GetWeaponIDExtended(name);
-				new index = FindValueInArray(hWeaponEntityArray, i);
-				if(id != WEAPON_NONE && index == -1)
-				{
-					PushArrayCell(hWeaponsIDArray, _:id);
-					PushArrayCell(hWeaponEntityArray, i); 
-				}
+				aTracker[Tracker_EntityIndex] = i;
+				aTracker[Tracker_WeaponIDIndex] = view_as<int>(id);
+				
+				hWeaponTracker.PushArray(aTracker);
 			}
 		}
 	}
 }
-public OnEntityCreated(entity, const String:classname[])
+
+public void OnEntityCreated(int entity, const char [] classname)
 {
-	if(hWeaponsIDArray == INVALID_HANDLE || hWeaponEntityArray == INVALID_HANDLE)
+	if(hWeaponTracker == null)
 		return;
 	
+	CSWeaponID id = CS_AliasToWeaponID(classname);
 	
-	if(StrContains(classname, "weapon_", false) != -1 || StrContains(classname, "item_", false) != -1)
+	if(g_iEngineVersion == Engine_CSGO && CSWeapons_IsValidID(id, true))
 	{
-		new WeaponID:id = GetWeaponID(classname);
+		SDKHook(entity, SDKHook_SpawnPost, SpawnPost); //Correct it if possiible
+	}
+	
+	if(CSWeapons_IsValidID(id, true) && hWeaponTracker.FindValue(entity, Tracker_EntityIndex) == -1)
+	{
+		int aTracker[Tracker_MAXIndex];
+		aTracker[Tracker_EntityIndex] = entity;
+		aTracker[Tracker_WeaponIDIndex] = view_as<int>(id);
 		
-		if(id == WEAPON_NONE || FindValueInArray(hWeaponEntityArray, entity) != -1)
-			return;
-		
-		PushArrayCell(hWeaponsIDArray, _:id);
-		PushArrayCell(hWeaponEntityArray, entity); 
+		hWeaponTracker.PushArray(aTracker);
 	}
 }
-public OnEntityDestroyed(entity)
-{	
-	if(hWeaponsIDArray == INVALID_HANDLE || hWeaponEntityArray == INVALID_HANDLE)
+
+public void SpawnPost(int entity)
+{
+	int iItemDefIndex = GetEntProp(entity, Prop_Send, "m_iItemDefinitionIndex");
+	
+	if(iItemDefIndex == 0)
 		return;
 	
-	new index = FindValueInArray(hWeaponEntityArray, entity);
+	CSWeaponID id = CS_ItemDefIndexToID(iItemDefIndex); // Get the real one.
+	
+	int index = hWeaponTracker.FindValue(entity, Tracker_EntityIndex);
+	
+	if(CSWeapons_IsValidID(id, true) &&  index != -1)
+	{
+		hWeaponTracker.Set(index, id, Tracker_WeaponIDIndex);
+	}
+}
+
+public void OnEntityDestroyed(int entity)
+{
+	if(hWeaponTracker == null)
+		return;
+	
+	int index = hWeaponTracker.FindValue(entity, Tracker_EntityIndex);
+	
 	if(index != -1)
-	{
-		RemoveFromArray(hWeaponEntityArray, index);
-		RemoveFromArray(hWeaponsIDArray, index);
-	}
+		hWeaponTracker.Erase(index);
 }
-stock WeaponID:GetWeaponIDFromEnt(entity)
+
+CSWeaponID GetWeaponIDFromEnt(int entity)
 {
 	if(!IsValidEdict(entity))
-		return WEAPON_NONE;
+		return CSWeapon_NONE;
 	
-	new index = FindValueInArray(hWeaponEntityArray, entity);
+	int index = hWeaponTracker.FindValue(entity, Tracker_EntityIndex);
+	
 	if(index != -1)
 	{
-		return GetArrayCell(hWeaponsIDArray, index);
-	}
-	//Just incase code
-	new String:classname[WEAPONARRAYSIZE];
-	GetEdictClassname(entity, classname, sizeof(classname));
-	if(StrContains(classname, "weapon_", false) != -1 || StrContains(classname, "item_", false) != -1)
-	{
-		new WeaponID:id = GetWeaponID(classname);
-		
-		if(id == WEAPON_NONE)
-			return WEAPON_NONE;
-		
-		PushArrayCell(hWeaponsIDArray, _:id);
-		PushArrayCell(hWeaponEntityArray, entity);
-		
-		return id;
+		return hWeaponTracker.Get(index, Tracker_WeaponIDIndex);
 	}
 	
-	return WEAPON_NONE;
+	return CSWeapon_NONE;
 }

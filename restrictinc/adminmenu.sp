@@ -1,45 +1,41 @@
-new g_iMenuAmount[MAXPLAYERS+1];
-new WeaponID:g_iWeaponSlected[MAXPLAYERS+1];
-new WeaponType:g_iGroupSelected[MAXPLAYERS+1];
-new bool:g_bIsGroup[MAXPLAYERS+1];
-new bool:g_bIsUnrestrict[MAXPLAYERS+1];
-public OnLibraryRemoved(const String:name[])
+int g_iMenuAmount[MAXPLAYERS+1];
+CSWeaponID g_iWeaponSlected[MAXPLAYERS+1];
+WeaponType g_iGroupSelected[MAXPLAYERS+1];
+bool g_bIsGroup[MAXPLAYERS+1];
+bool g_bIsUnrestrict[MAXPLAYERS+1];
+
+public void OnLibraryRemoved(const char [] name)
 {
 	if (StrEqual(name, "adminmenu")) 
 	{
-		hAdminMenu = INVALID_HANDLE;
+		hAdminMenu = null;
 	}
 }
 
-public OnAdminMenuReady(Handle:topmenu)
+public void OnAdminMenuReady(Handle topmenu)
 {
 	if (topmenu == hAdminMenu)
 	{
 		return;
 	}
 	
-	hAdminMenu = topmenu;
+	hAdminMenu = view_as<TopMenu>(topmenu);
 	
-	new TopMenuObject:menu = FindTopMenuCategory(hAdminMenu, "restrict");
+	TopMenuObject menuObject = hAdminMenu.FindCategory("restrict");
 	
-	if (menu == INVALID_TOPMENUOBJECT)
+	if (menuObject == INVALID_TOPMENUOBJECT )
 	{
-		menu = AddToTopMenu(
-		hAdminMenu,		// Menu
-		"restrict",		// Name
-		TopMenuObject_Category,	// Type
-		Handle_Category,	// Callback
-		INVALID_TOPMENUOBJECT	// Parent
-		);
+		menuObject = hAdminMenu.AddCategory("restrict", Handle_Category);
 	}
 	
-	AddToTopMenu(hAdminMenu, "sm_restrict", TopMenuObject_Item, AdminMenu_Restrict, menu, "sm_restrict", ADMFLAG_CONVARS);
-	AddToTopMenu(hAdminMenu, "sm_unrestrict", TopMenuObject_Item, AdminMenu_Unrestrict, menu, "sm_unrestrict", ADMFLAG_CONVARS);
-	AddToTopMenu(hAdminMenu, "sm_dropc4", TopMenuObject_Item, AdminMenu_dropc4, menu, "sm_dropc4", ADMFLAG_BAN);
-	AddToTopMenu(hAdminMenu, "sm_knives", TopMenuObject_Item, AdminMenu_Knives, menu, "sm_knives", ADMFLAG_CONVARS);
-	AddToTopMenu(hAdminMenu, "sm_pistols", TopMenuObject_Item, AdminMenu_Pistols, menu, "sm_pistols", ADMFLAG_CONVARS);
+	hAdminMenu.AddItem("sm_restrict", AdminMenu_Restrict, menuObject, "sm_restrict", ADMFLAG_CONVARS);
+	hAdminMenu.AddItem("sm_unrestrict", AdminMenu_Unrestrict, menuObject, "sm_unrestrict", ADMFLAG_CONVARS);
+	hAdminMenu.AddItem("sm_dropc4", AdminMenu_dropc4, menuObject, "sm_dropc4", ADMFLAG_BAN);
+	hAdminMenu.AddItem("sm_knives", AdminMenu_Knives, menuObject, "sm_knives", ADMFLAG_CONVARS);
+	hAdminMenu.AddItem("sm_pistols", AdminMenu_Pistols, menuObject, "sm_pistols", ADMFLAG_CONVARS);
 }
-public Handle_Category(Handle:topmenu, TopMenuAction:action, TopMenuObject:object_id, param, String:buffer[], maxlength )
+
+public void Handle_Category(Handle topmenu, TopMenuAction action, TopMenuObject object_id, int param, char [] buffer, int maxlength)
 {
 	switch(action)
 	{
@@ -49,7 +45,8 @@ public Handle_Category(Handle:topmenu, TopMenuAction:action, TopMenuObject:objec
 			Format(buffer, maxlength, "%T", "RestrictMenuMainOption", param);
 	}
 }
-public AdminMenu_Restrict(Handle:topmenu, TopMenuAction:action, TopMenuObject:object_id,param, String:buffer[], maxlength)
+
+public void AdminMenu_Restrict(Handle topmenu, TopMenuAction action, TopMenuObject object_id, int param, char [] buffer, int maxlength )
 {
 	switch(action)
 	{
@@ -62,7 +59,8 @@ public AdminMenu_Restrict(Handle:topmenu, TopMenuAction:action, TopMenuObject:ob
 		}
 	}
 }
-public AdminMenu_Unrestrict(Handle:topmenu, TopMenuAction:action, TopMenuObject:object_id,param, String:buffer[], maxlength)
+
+public void AdminMenu_Unrestrict(Handle topmenu, TopMenuAction action, TopMenuObject object_id, int param, char [] buffer, int maxlength )
 {
 	switch(action)
 	{
@@ -76,7 +74,8 @@ public AdminMenu_Unrestrict(Handle:topmenu, TopMenuAction:action, TopMenuObject:
 		}
 	}
 }
-public AdminMenu_dropc4(Handle:topmenu, TopMenuAction:action, TopMenuObject:object_id,param, String:buffer[], maxlength)
+
+public void AdminMenu_dropc4(Handle topmenu, TopMenuAction action, TopMenuObject object_id, int param, char [] buffer, int maxlength )
 {
 	switch(action)
 	{
@@ -86,7 +85,8 @@ public AdminMenu_dropc4(Handle:topmenu, TopMenuAction:action, TopMenuObject:obje
 			DropC4(param, 0);
 	}
 }
-public AdminMenu_Knives(Handle:topmenu, TopMenuAction:action, TopMenuObject:object_id,param, String:buffer[], maxlength)
+
+public void AdminMenu_Knives(Handle topmenu, TopMenuAction action, TopMenuObject object_id, int param, char [] buffer, int maxlength )
 {
 	switch(action)
 	{
@@ -96,7 +96,8 @@ public AdminMenu_Knives(Handle:topmenu, TopMenuAction:action, TopMenuObject:obje
 			KnifeRound(param, 0);
 	}
 }
-public AdminMenu_Pistols(Handle:topmenu, TopMenuAction:action, TopMenuObject:object_id,param, String:buffer[], maxlength)
+
+public void AdminMenu_Pistols(Handle topmenu, TopMenuAction action, TopMenuObject object_id, int param, char [] buffer, int maxlength )
 {
 	switch(action)
 	{
@@ -106,82 +107,89 @@ public AdminMenu_Pistols(Handle:topmenu, TopMenuAction:action, TopMenuObject:obj
 			PistolRound(param, 0);
 	}
 }
-DisplayTypeMenu(client)
+
+void DisplayTypeMenu(int client)
 {
-	new Handle:menu = CreateMenu(Handle_TypeMenu);
+	Menu menu = CreateMenu(Handle_TypeMenu);
 	
-	decl String:title[64];
+	char title[64];
 	
 	Format(title, sizeof(title), "%T", "RestrictionTypeMenuTitle", client);
 
-	SetMenuTitle(menu, title);
-	SetMenuExitBackButton(menu, true);
+	menu.SetTitle(title);
+	menu.ExitBackButton = true;
 	
 	Format(title, sizeof(title), "%T", "TypeWeaponRestrict", client);
-	AddMenuItem(menu, "0", title);
-	Format(title, sizeof(title), "%T", "TypeGroupRestrict", client);
-	AddMenuItem(menu, "1", title);
+	menu.AddItem("0", title);
 	
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	Format(title, sizeof(title), "%T", "TypeGroupRestrict", client);
+	menu.AddItem("1", title);
+	
+	menu.Display(client, MENU_TIME_FOREVER);
 }
-public Handle_TypeMenu(Handle:menu, MenuAction:action, param1, param2)
+
+public int Handle_TypeMenu(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch(action)
 	{
 		case MenuAction_End:
-			CloseHandle(menu);
+			delete menu;
 		case MenuAction_Cancel:
 		{
-			if(param2 == MenuCancel_ExitBack && hAdminMenu != INVALID_HANDLE)
+			if(param2 == MenuCancel_ExitBack && hAdminMenu != null)
 				DisplayTopMenu(hAdminMenu, param1, TopMenuPosition_LastCategory);
 		}
 		case MenuAction_Select:
 		{
-			decl String:type[5];
+			char type[5];
 			GetMenuItem(menu, param2, type, sizeof(type));
-			g_bIsGroup[param1] = bool:StringToInt(type);
+			g_bIsGroup[param1] = view_as<bool>(StringToInt(type));
 			DisplayRestrictMenu(param1);
 		}
 	}
 }
-DisplayRestrictMenu(client)
+
+void DisplayRestrictMenu(int client)
 {
-	new Handle:menu = CreateMenu(Handle_WeaponMenu);
+	Menu menu = CreateMenu(Handle_WeaponMenu);
 	
-	decl String:title[64];
+	char title[64];
 	
 	if(!g_bIsUnrestrict[client])
 		Format(title, sizeof(title), "%T", "RestrictMenuTitle", client);
 	else
 		Format(title, sizeof(title), "%T", "UnrestrictMenuTitle", client);
 
-	SetMenuTitle(menu, title);
-	SetMenuExitBackButton(menu, true);
+	menu.SetTitle(title);
+	menu.ExitBackButton = true;
+	
 	if(g_bIsGroup[client])
 		AddGroupsToMenu(menu, client);
 	else
 		AddWeaponsToMenu(menu, client);
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	
+	menu.Display(client, MENU_TIME_FOREVER);
 }
-public Handle_WeaponMenu(Handle:menu, MenuAction:action, param1, param2)
+
+public int Handle_WeaponMenu(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch(action)
 	{
 		case MenuAction_End:
-			CloseHandle(menu);
+			delete menu;
 		case MenuAction_Cancel:
 		{
-			if(param2 == MenuCancel_ExitBack && hAdminMenu != INVALID_HANDLE)
+			if(param2 == MenuCancel_ExitBack && hAdminMenu != null)
 				DisplayTypeMenu(param1);
 		}
 		case MenuAction_Select:
 		{
-			decl String:weapon[WEAPONARRAYSIZE];
+			char weapon[WEAPONARRAYSIZE];
 			GetMenuItem(menu, param2, weapon, sizeof(weapon));
 			if(g_bIsGroup[param1])
 				g_iGroupSelected[param1] = GetTypeGroup(weapon);
 			else
-				g_iWeaponSlected[param1] = GetWeaponID(weapon);
+				g_iWeaponSlected[param1] = CS_AliasToWeaponID(weapon);
 		
 			if(g_bIsGroup[param1] && g_bIsUnrestrict[param1])
 			{
@@ -193,47 +201,43 @@ public Handle_WeaponMenu(Handle:menu, MenuAction:action, param1, param2)
 			}
 			else
 			{
-				switch(g_iWeaponSlected[param1])
-				{
-					case WEAPON_C4:
-						HandleMenuRestriction(param1, WEAPON_C4, -1, CS_TEAM_T);
-					case WEAPON_DEFUSER:
-						HandleMenuRestriction(param1, WEAPON_DEFUSER, -1, CS_TEAM_CT);
-					default:
-						DisplayTeamMenu(param1);
-				}
+				DisplayTeamMenu(param1);
 			}
 		}
 	}
 }
-DisplayAmountMenu(client)
+
+void DisplayAmountMenu(int client)
 {
-	new Handle:menu = CreateMenu(Handle_AmountMenu);
+	Menu menu = CreateMenu(Handle_AmountMenu);
 	
-	decl String:title[64];
+	char title[64];
 	
 	Format(title, sizeof(title), "%T", "AmountMenuTitle", client);
 
-	SetMenuTitle(menu, title);
-	SetMenuExitBackButton(menu, true);
-	decl String:num[5];
-	for(new i = 0; i <= MaxClients; i++)
+	menu.SetTitle(title);
+	menu.ExitBackButton = true;
+	
+	char num[5];
+	for(int i = 0; i <= MaxClients; i++)
 	{
 		Format(num, sizeof(num), "%i", i);
 		AddMenuItem(menu, num, num);
 	}
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
-}
-DisplayTeamMenu(client)
-{
-	new Handle:menu = CreateMenu(Handle_TeamMenu);
 	
-	decl String:title[64];
+	menu.Display(client, MENU_TIME_FOREVER);
+}
+
+void DisplayTeamMenu(int client)
+{
+	Menu menu = CreateMenu(Handle_TeamMenu);
+	
+	char title[64];
 	
 	Format(title, sizeof(title), "%T", "SelectTeamMenuTitle", client);
 
-	SetMenuTitle(menu, title);
-	SetMenuExitBackButton(menu, true);
+	menu.SetTitle(title);
+	menu.ExitBackButton = true;
 	
 	Format(title, sizeof(title), "%T", "CounterTerrorists", client);
 	AddMenuItem(menu, "3", title);
@@ -242,19 +246,24 @@ DisplayTeamMenu(client)
 	AddMenuItem(menu, "2", title);
 	
 	Format(title, sizeof(title), "%T", "Allteams", client);
-	AddMenuItem(menu, "0", title);
 	
-	DisplayMenu(menu, client, MENU_TIME_FOREVER);
+	char szBothTeams[4];
+	IntToString(BOTH_TEAMS, szBothTeams, sizeof(szBothTeams));
+	
+	AddMenuItem(menu, szBothTeams, title);
+	
+	menu.Display(client, MENU_TIME_FOREVER);
 }
-public Handle_TeamMenu(Handle:menu, MenuAction:action, param1, param2)
+
+public int Handle_TeamMenu(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch(action)
 	{
 		case MenuAction_End:
-			CloseHandle(menu);
+			delete menu;
 		case MenuAction_Cancel:
 		{
-			if(param2 == MenuCancel_ExitBack && hAdminMenu != INVALID_HANDLE)
+			if(param2 == MenuCancel_ExitBack && hAdminMenu != null)
 			{
 				if(!g_bIsUnrestrict[param1])
 					DisplayAmountMenu(param1);
@@ -264,9 +273,11 @@ public Handle_TeamMenu(Handle:menu, MenuAction:action, param1, param2)
 		}
 		case MenuAction_Select:
 		{
-			decl String:sTeam[5];
+			char sTeam[5];
 			GetMenuItem(menu, param2, sTeam, sizeof(sTeam));
-			new team = StringToInt(sTeam);
+			
+			int team = StringToInt(sTeam);
+			
 			if(!g_bIsGroup[param1])
 				HandleMenuRestriction(param1, g_iWeaponSlected[param1], g_iMenuAmount[param1], team);
 			else
@@ -274,71 +285,73 @@ public Handle_TeamMenu(Handle:menu, MenuAction:action, param1, param2)
 		}
 	}
 }
-public Handle_AmountMenu(Handle:menu, MenuAction:action, param1, param2)
+
+public int Handle_AmountMenu(Menu menu, MenuAction action, int param1, int param2)
 {
 	switch(action)
 	{
 		case MenuAction_End:
-			CloseHandle(menu);
+			delete menu;
 		case MenuAction_Cancel:
 		{
-			if(param2 == MenuCancel_ExitBack && hAdminMenu != INVALID_HANDLE)
+			if(param2 == MenuCancel_ExitBack && hAdminMenu != null)
 				DisplayRestrictMenu(param1);
 		}
 		case MenuAction_Select:
 		{
-			decl String:amount[10];
+			char amount[10];
 			GetMenuItem(menu, param2, amount, sizeof(amount));
 			g_iMenuAmount[param1] = StringToInt(amount);
-			switch(g_iWeaponSlected[param1])
-			{
-				case WEAPON_C4:
-					HandleMenuRestriction(param1, WEAPON_C4, g_iMenuAmount[param1], CS_TEAM_T);
-				case WEAPON_DEFUSER:
-					HandleMenuRestriction(param1, WEAPON_DEFUSER, g_iMenuAmount[param1], CS_TEAM_CT);
-				default:
-					DisplayTeamMenu(param1);
-			}
+			DisplayTeamMenu(param1);
 		}
 	}
 }
-stock HandleMenuRestriction(client, WeaponID:id, amount, team)
+
+stock void HandleMenuRestriction(int client, CSWeaponID id, int amount, int team)
 {
+	char szWeaponName[WEAPONARRAYSIZE];
+	
+	CSWeapons_GetAlias(id, szWeaponName, sizeof(szWeaponName), true);
+	
 	if(amount != -1)
 	{
-		if(team == 3 || team == 0)
+		if(team == 3 || team == BOTH_TEAMS)
 		{
 			Restrict_SetRestriction(id, CS_TEAM_CT, amount, true);
-			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", weaponNames[_:id], "ToAmount", amount, "ForCT");
+			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", szWeaponName, "ToAmount", amount, "ForCT");
 		}
-		if(team == 2 || team == 0)
+		if(team == 2 || team == BOTH_TEAMS)
 		{
 			Restrict_SetRestriction(id, CS_TEAM_T, amount, true);
-			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", weaponNames[_:id], "ToAmount", amount, "ForT");
+			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", szWeaponName, "ToAmount", amount, "ForT");
 		}
 	}
 	else
 	{
-		if(team == 3 || team == 0)
+		if(team == 3 || team == BOTH_TEAMS)
 		{
 			Restrict_SetRestriction(id, CS_TEAM_CT, amount, true);
-			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", weaponNames[_:id], "ForCT");
+			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", szWeaponName, "ForCT");
 		}
-		if(team == 2 || team == 0)
+		if(team == 2 || team == BOTH_TEAMS)
 		{
 			Restrict_SetRestriction(id, CS_TEAM_T, amount, true);
-			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", weaponNames[_:id], "ForT");
+			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", szWeaponName, "ForT");
 		}
 	}
 }
-stock HandleMenuGroupRestriction(client, WeaponType:group, amount, team)
+
+stock void HandleMenuGroupRestriction(int client, WeaponType group, int amount, int team)
 {
 	if(group == WeaponTypeNone)
 	{
-		for(new i = 1; i < _:WeaponID; i++)
+		for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
 		{
-			Restrict_SetRestriction(WeaponID:i, CS_TEAM_CT, amount, true);
-			Restrict_SetRestriction(WeaponID:i, CS_TEAM_T, amount, true);
+			if(!CSWeapons_IsValidID(view_as<CSWeaponID>(i), true))
+				continue;
+			
+			Restrict_SetRestriction(view_as<CSWeaponID>(i), CS_TEAM_CT, amount, true);
+			Restrict_SetRestriction(view_as<CSWeaponID>(i), CS_TEAM_T, amount, true);
 		}
 		if(amount != -1)
 		{
@@ -352,72 +365,95 @@ stock HandleMenuGroupRestriction(client, WeaponType:group, amount, team)
 	}
 	if(amount != -1)
 	{
-		if(team == 3 || team == 0)
+		if(team == 3 || team == BOTH_TEAMS)
 		{
 			Restrict_SetGroupRestriction(group, CS_TEAM_CT, amount, true);
-			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", g_WeaponGroupNames[_:group], "ToAmount", amount, "ForCT");
+			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", g_WeaponGroupNames[view_as<int>(group)], "ToAmount", amount, "ForCT");
 		}
-		if(team == 2 || team == 0)
+		if(team == 2 || team == BOTH_TEAMS)
 		{
 			Restrict_SetGroupRestriction(group, CS_TEAM_T, amount, true);
-			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", g_WeaponGroupNames[_:group], "ToAmount", amount, "ForT");
+			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t %t", "RestrictedCmd", g_WeaponGroupNames[view_as<int>(group)], "ToAmount", amount, "ForT");
 		}
 	}
 	else
 	{
-		if(team == 3 || team == 0)
+		if(team == 3 || team == BOTH_TEAMS)
 		{
 			Restrict_SetGroupRestriction(group, CS_TEAM_CT, amount, true);
-			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", g_WeaponGroupNames[_:group], "ForCT");
+			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", g_WeaponGroupNames[view_as<int>(group)], "ForCT");
 		}
-		if(team == 2 || team == 0)
+		if(team == 2 || team == BOTH_TEAMS)
 		{
 			Restrict_SetGroupRestriction(group, CS_TEAM_T, amount, true);
-			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", g_WeaponGroupNames[_:group], "ForT");
+			ShowActivity2(client, ADMINCOMMANDTAG, "%t %t %t", "UnrestrictedCmd", g_WeaponGroupNames[view_as<int>(group)], "ForT");
 		}
 	}
 }
-AddGroupsToMenu(Handle:menu, client)
+
+void AddGroupsToMenu(Menu menu, int client)
 {
-	new String:weaponArray[MAXWEAPONGROUPS][WEAPONARRAYSIZE];
-	new size;
+	static char groupArray[MAXWEAPONGROUPS][WEAPONARRAYSIZE];
+	static int size = -1;
 	
-	for(new i = 0; i < MAXWEAPONGROUPS; i++)
+	if(size == -1)
 	{
-		strcopy(weaponArray[size], WEAPONARRAYSIZE, g_WeaponGroupNames[i]);
-		size++;
+		for(int i = 0; i < MAXWEAPONGROUPS; i++)
+		{
+			strcopy(groupArray[i], WEAPONARRAYSIZE, g_WeaponGroupNames[i]);
+		}
+		
+		size = sizeof(groupArray);
+		
+		SortStrings(groupArray, size, Sort_Ascending);
 	}
-	SortStrings(weaponArray, size-1, Sort_Ascending);
 	
-	decl String:weapon[WEAPONARRAYSIZE];
+	char weapon[WEAPONARRAYSIZE];
 	Format(weapon, sizeof(weapon), "%T", "AllWeapons", client);
 	AddMenuItem(menu, "all", weapon);
 	
-	for(new i = 0; i < size-1; i++)
+	for(int i = 0; i < size; i++)
 	{
-		Format(weapon, sizeof(weapon), "%T", weaponArray[i], client); 
-		AddMenuItem(menu, weaponArray[i], weapon);
+		Format(weapon, sizeof(weapon), "%T", groupArray[i], client); 
+		AddMenuItem(menu, groupArray[i], weapon);
 	}
 }
-AddWeaponsToMenu(Handle:menu, client)
+
+void AddWeaponsToMenu(Menu menu, int client)
 {
-	new len = _:WeaponID;
-	new String:weaponArray[len][WEAPONARRAYSIZE];
-	new size;
+	static int size = -1;
 	
-	for(new i = 0; i < _:WeaponID; i++)
+	char szWeaponName[WEAPONARRAYSIZE];
+	
+	if(size == -1)
 	{
-		if(WeaponID:i == WEAPON_NONE || WeaponID:i == WEAPON_SHIELD)
-			continue;
+		size = hWeaponNameList.Length;
 		
-		strcopy(weaponArray[size], WEAPONARRAYSIZE, weaponNames[WeaponID:i]);
-		size++;
+		char [][] szWeaponArray = new char[size][WEAPONARRAYSIZE];
+		
+		for(int i = 0; i < size; i++)
+		{
+			hWeaponNameList.GetString(i, szWeaponName, sizeof(szWeaponName));
+			strcopy(szWeaponArray[i], WEAPONARRAYSIZE, szWeaponName);
+		}
+		
+		SortStrings(szWeaponArray, size, Sort_Ascending);
+		
+		hWeaponNameList.Clear();
+		
+		for(int i = 0; i < size; i++)
+		{
+			hWeaponNameList.PushString(szWeaponArray[i]);
+		}
 	}
-	SortStrings(weaponArray, size-1, Sort_Ascending);
-	decl String:weapon[WEAPONARRAYSIZE];
-	for(new i = 0; i < size-1; i++)
+	
+	char szAlias[WEAPONARRAYSIZE];
+	
+	for(int i = 0; i < size; i++)
 	{
-		Format(weapon, sizeof(weapon), "%T", weaponArray[i], client); 
-		AddMenuItem(menu, weaponArray[i], weapon);
+		hWeaponNameList.GetString(i, szAlias, sizeof(szAlias));
+		Format(szWeaponName, sizeof(szWeaponName), "%T", szAlias, client);
+
+		AddMenuItem(menu, szAlias, szWeaponName);
 	}
 }

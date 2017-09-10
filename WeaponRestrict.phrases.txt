@@ -120,15 +120,15 @@
 	{
 		"en"		"Knife"
 	}
-	"vest"
+	"kevlar"
 	{
 		"en"		"Kevlar"
 	}
-	"vesthelm"
+	"assaultsuit"
 	{
-		"en"		"Vest and Helmet"
+		"en"		"Assaultsuit"
 	}
-	"nvgs"
+	"nightvision"
 	{
 		"en"		"Nightvision"
 	}
@@ -180,10 +180,6 @@
 	{
 		"en"		"P250"
 	}
-	"scar17"
-	{
-		"en"		"Scar 17"
-	}
 	"scar20"
 	{
 		"en"		"Scar 20"
@@ -211,6 +207,82 @@
 	"incgrenade"
 	{
 		"en"		"Incendiary Grenade"
+	}
+	"heavyassaultsuit"
+	{
+		"en"		"Heavy Assaultsuit"
+	}
+	"cutters"
+	{
+		"en"		"Cutters"
+	}
+	"healthshot"
+	{
+		"en"		"Healthshot"
+	}
+	"knife_t"
+	{
+		"en"		"Terrorist Knife"
+	}
+	"m4a1_silencer"
+	{
+		"en"		"M4A1-S"
+	}
+	"usp_silencer"
+	{
+		"en"		"USP-S"
+	}
+	"cz75a"
+	{
+		"en"		"CZ74A"
+	}
+	"revolver"
+	{
+		"en"		"Revolver"
+	}
+	"tagrenade"
+	{
+		"en"		"Tactical Awareness Grenade"
+	}
+	"knife_flip"
+	{
+		"en"		"Flip Knife"
+	}
+	"bayonet"
+	{
+		"en"		"Bayonet"
+	}
+	"knife_m9_bayonet"
+	{
+		"en"		"M9 Bayonet"
+	}
+	"knife_karambit"
+	{
+		"en"		"Karambit"
+	}
+	"knife_tactical"
+	{
+		"en"		"Tactical Knife"
+	}
+	"knife_falchion"
+	{
+		"en"		"Falchion"
+	}
+	"knife_survival_bowie"
+	{
+		"en"		"Bowie Knife"
+	}
+	"knife_butterfly"
+	{
+		"en"		"Butterfly Knife"
+	}
+	"knife_push"
+	{
+		"en"		"Shadow Daggers"
+	}
+	"knife_gut"
+	{
+		"en"		"Gut Knife"
 	}
 	"pistols"
 	{

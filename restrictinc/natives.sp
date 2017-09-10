@@ -1,30 +1,29 @@
-new Handle:hCanBuyForward = INVALID_HANDLE;
-new Handle:hCanPickupForward = INVALID_HANDLE;
-new Handle:hRestrictSoundForward = INVALID_HANDLE;
-new Handle:hWarmupStartForward = INVALID_HANDLE;
-new Handle:hWarmupEndForward = INVALID_HANDLE;
+static Handle hCanBuyForward = null;
+static Handle hCanPickupForward = null;
+static Handle hRestrictSoundForward = null;
+static Handle hWarmupStartForward = null;
+static Handle hWarmupEndForward = null;
+
 #if defined PERPLAYER
-new bool:g_bOverideT[_:WeaponID];
-new bool:g_bOverideCT[_:WeaponID];
+static bool g_bOverrideValues[CSWeapon_MAX_WEAPONS][CVarTeam_MAX];
 #endif
 
-//m_iAmmo array index
-new HEGRENADE_AMMO = 11;
-new FLASH_AMMO = 12;
-new SMOKE_AMMO = 13;
-
-//CS:GO ONLY
-new INC_AMMO = 16;
-new DECOY_AMMO = 17;
-
-RegisterNatives()
+enum
 {
-	if(g_iGame == GAME_CSGO)
-	{
-		HEGRENADE_AMMO = 13;
-		FLASH_AMMO = 14;
-		SMOKE_AMMO = 15;
-	}
+	Ammo_HEGrenade_Index = 0,
+	Ammo_Flashbang_Index,
+	Ammo_Smokegrenade_Index,
+	Ammo_IncGrenade_Index,
+	Ammo_DecoyGrenade_Index,
+	Ammo_TAGrenade_Index,
+	Ammo_MAXINDEX
+}
+
+//m_iAmmo array index
+static int iGrenadeAmmoIndex[Ammo_MAXINDEX] = {-1, ...};
+
+void RegisterNatives()
+{
 	RegPluginLibrary("weaponrestrict");
 	
 	CreateNative("Restrict_RefundMoney", Native_RefundMoney);
@@ -53,7 +52,8 @@ RegisterNatives()
 	CreateNative("Restrict_IsWeaponInOverride", Native_IsWeaponInOverride);
 	CreateNative("Restrict_IsWarmupWeapon", Native_IsWarmupWeapon);
 }
-RegisterForwards()
+
+void RegisterForwards()
 {
 	hCanBuyForward = CreateGlobalForward("Restrict_OnCanBuyWeapon", ET_Event, Param_Cell, Param_Cell, Param_Cell, Param_CellByRef);
 	hCanPickupForward = CreateGlobalForward("Restrict_OnCanPickupWeapon", ET_Event, Param_Cell, Param_Cell, Param_Cell, Param_CellByRef);
@@ -61,90 +61,152 @@ RegisterForwards()
 	hWarmupStartForward = CreateGlobalForward("Restrict_OnWarmupStart_Post", ET_Ignore);
 	hWarmupEndForward = CreateGlobalForward("Restrict_OnWarmupEnd_Post", ET_Ignore);
 }
-stock OnWarmupStart_Post()
+
+void RegisterGrenades()
+{
+	static bool bAmmoChecked = false;
+	
+	if(!bAmmoChecked)
+	{
+		static char szGrenadeClassnames[][] = {"weapon_hegrenade", "weapon_flashbang", "weapon_smokegrenade", "weapon_incgrenade", "weapon_decoy", "weapon_tagrenade"};
+		
+		int iEnt;
+		
+		for(int i = 0; i < Ammo_MAXINDEX; i++)
+		{
+			if(g_iEngineVersion == Engine_CSS && i >= Ammo_IncGrenade_Index)
+				break;
+			
+			iEnt = CreateEntityByName(szGrenadeClassnames[i]);
+			
+			if(iEnt)
+			{
+				DispatchSpawn(iEnt);
+				iGrenadeAmmoIndex[i] = GetEntProp(iEnt, Prop_Send, "m_iPrimaryAmmoType");
+				AcceptEntityInput(iEnt, "Kill");
+			}
+		}
+		bAmmoChecked = true;
+	}
+}
+
+stock void OnWarmupStart_Post()
 {
 	Call_StartForward(hWarmupStartForward);
 	Call_Finish();
 }
-stock OnWarmupEnd_Post()
+
+stock void OnWarmupEnd_Post()
 {
 	Call_StartForward(hWarmupEndForward);
 	Call_Finish();
 }
-public Native_RefundMoney(Handle:hPlugin, iNumParams)
+
+public int Native_RefundMoney(Handle hPlugin, int iNumParams)
 {
-	new client = GetNativeCell(1);
-	new WeaponID:id = GetNativeCell(2);
+	int client = GetNativeCell(1);
+	CSWeaponID id = GetNativeCell(2);
+	
 	if(!IsValidClient(client))
 	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "Client index %d is invalid.", client);
 	}
-	if(!IsValidWeaponID(id))
-	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
-	}
-	new amount = GetWeaponPrice(client, id);
-		
-	new max = 16000;
-	if(mp_maxmoney != INVALID_HANDLE)
-		max = GetConVarInt(mp_maxmoney);
 	
-	new account = GetEntProp(client, Prop_Send, "m_iAccount");
+	if(!CSWeapons_IsValidID(id, true))
+	{
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
+	}
+	
+	int amount = CSWeapons_GetWeaponPrice(client, id, true);
+		
+	int max = 16000;
+	
+	if(hMaxMoney != null)
+		max = hMaxMoney.IntValue;
+	
+	int account = GetEntProp(client, Prop_Send, "m_iAccount");
 	account += amount;
+	
 	if(account < max)
 		SetEntProp(client, Prop_Send, "m_iAccount", account);
 	else
 		SetEntProp(client, Prop_Send, "m_iAccount", max);
 		
-	PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", "Refunded", client, amount,  weaponNames[_:id], client);
+	char szWeaponName[WEAPONARRAYSIZE];
+	CSWeapons_GetAlias(id, szWeaponName, sizeof(szWeaponName), true);
+	
+	PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", "Refunded", client, amount,  szWeaponName, client);
 	
 	return 1;
 }
-public Native_RemoveRandom(Handle:hPlugin, iNumParams)
+
+public int Native_RemoveRandom(Handle hPlugin, int iNumParams)
 {
-	new count = GetNativeCell(1);
-	new team = GetNativeCell(2);
-	new WeaponID:id = GetNativeCell(3);
-	if(!IsValidTeam(team))
-	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", team);
-	}
-	if(!IsValidWeaponID(id))
-	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
-	}
-	new WeaponSlot:slot = GetSlotFromWeaponID(id);
-	new weaponArray[MAXPLAYERS*GetMaxGrenades()];//Times X since a player can have X flashes/he/smokes x being the value of the ammo cvars
+	static int iMyWeaponsMax = -1;
 	
-	new index = 0;
-	if(slot == SlotUnknown)
+	if(iMyWeaponsMax == -1)
+	{
+		for(int i = 1; i <= MaxClients; i++)
+		{
+			if(IsClientInGame(i))
+			{
+				iMyWeaponsMax = GetEntPropArraySize(i, Prop_Send, "m_hMyWeapons");
+				break;
+			}
+		}
+		
+		if(iMyWeaponsMax == -1)
+		{
+			return ThrowNativeError(SP_ERROR_NATIVE, "Failed to get m_hMyWeapons array size");
+		}
+	}
+
+	int iCount = GetNativeCell(1);
+	int iTeam = GetNativeCell(2);
+	CSWeaponID id = GetNativeCell(3);
+	
+	if(!IsValidTeam(iTeam))
+	{
+		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", iTeam);
+	}
+	
+	if(!CSWeapons_IsValidID(id, true))
+	{
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
+	}
+	
+	WeaponSlot slot = CSWeapons_GetWeaponSlot(id);
+	
+	int [] iRemoveEnts = new int[MAXPLAYERS*GetMaxGrenades()];//Times X since a player can have X flashes/he/smokes x being the value of the ammo cvars
+	
+	int index = 0;
+	
+	if(slot == SlotInvalid)
 		return ThrowNativeError(SP_ERROR_NATIVE, "Unknown weapon slot returned.");
 	
-	for(new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
-		if(!IsClientInGame(i) || Restrict_ImmunityCheck(i) || GetClientTeam(i) != team)
+		if(!IsClientInGame(i) || Restrict_ImmunityCheck(i) || GetClientTeam(i) != iTeam)
 			continue;
 		
-		if(slot == SlotGrenade || id == WEAPON_TASER || id == WEAPON_KNIFE || id == WEAPON_KNIFE_GG)// CSGO has 2 "knives" slots
+		if(slot == SlotGrenade || slot == SlotKnife)// CSGO has 2 "knives" slots
 		{
-			new gcount;
-			if(id == WEAPON_TASER || id == WEAPON_KNIFE || id == WEAPON_KNIFE_GG)//CSGO 
+			int iWeaponCount = 1;
+			
+			if(slot == SlotGrenade)
 			{
-				gcount = 1;
+				iWeaponCount = Restrict_GetClientGrenadeCount(i, id);
 			}
-			else
+			
+			int iEnt = 0;
+			for(int x = 0; x < iMyWeaponsMax; x++)
 			{
-				gcount = Restrict_GetClientGrenadeCount(i, id);
-			}
-			new ent = 0;
-			for(new x = 0; x <= g_iMyWeaponsMax; x++)
-			{
-				ent = GetEntPropEnt(i, Prop_Send, "m_hMyWeapons", x);
-				if(ent != -1 && ent && IsValidEdict(ent) && GetWeaponIDFromEnt(ent) == id)
+				iEnt = GetEntPropEnt(i, Prop_Send, "m_hMyWeapons", x);
+				if(iEnt != -1 && iEnt && IsValidEdict(iEnt) && GetWeaponIDFromEnt(iEnt) == id)
 				{
-					for(new z = 1; z <= gcount; z++)
+					for(int z = 0; z < iWeaponCount; z++)
 					{
-						weaponArray[index] = ent;
+						iRemoveEnts[index] = iEnt;
 						index++;
 					}
 				}
@@ -154,69 +216,79 @@ public Native_RemoveRandom(Handle:hPlugin, iNumParams)
 		{
 			if(Restrict_HasSpecialItem(i, id))
 			{
-				weaponArray[index] = i;
+				iRemoveEnts[index] = i;
 				index++;
 			}
 		}
 		else
 		{
-			new ent = GetPlayerWeaponSlot(i, _:slot);
-			if(ent != -1 && GetWeaponIDFromEnt(ent) == id)
+			int iEnt = GetPlayerWeaponSlot(i, view_as<int>(slot));
+			if(iEnt != -1 && GetWeaponIDFromEnt(iEnt) == id)
 			{
-				weaponArray[index] = ent;
+				iRemoveEnts[index] = iEnt;
 				index++;
 			}
 		}
 	}
-	SortIntegers(weaponArray, index-1, Sort_Random);
+	SortIntegers(iRemoveEnts, index-1, Sort_Random);
 	
 	if(slot == SlotGrenade)
 	{
-		new ammoindex = -1;
+		int iAmmoIndex = -1;
 		switch(id)
 		{
-			case WEAPON_HEGRENADE:
+			case CSWeapon_HEGRENADE:
 			{
-				ammoindex = HEGRENADE_AMMO;
+				iAmmoIndex = iGrenadeAmmoIndex[Ammo_HEGrenade_Index];
 			}
-			case WEAPON_FLASHBANG:
+			case CSWeapon_FLASHBANG:
 			{
-				ammoindex = FLASH_AMMO;
+				iAmmoIndex = iGrenadeAmmoIndex[Ammo_Flashbang_Index];
 			}
-			case WEAPON_SMOKEGRENADE:
+			case CSWeapon_SMOKEGRENADE:
 			{
-				ammoindex = SMOKE_AMMO;
+				iAmmoIndex = iGrenadeAmmoIndex[Ammo_Smokegrenade_Index];
 			}
-			case WEAPON_INCGRENADE, WEAPON_MOLOTOV:
+			case CSWeapon_INCGRENADE, CSWeapon_MOLOTOV:
 			{
-				ammoindex = INC_AMMO;
+				iAmmoIndex = iGrenadeAmmoIndex[Ammo_IncGrenade_Index];
 			}
-			case WEAPON_DECOY:
+			case CSWeapon_DECOY:
 			{
-				ammoindex = DECOY_AMMO;
+				iAmmoIndex = iGrenadeAmmoIndex[Ammo_DecoyGrenade_Index];
+			}
+			case CSWeapon_TAGGRENADE:
+			{
+				iAmmoIndex = iGrenadeAmmoIndex[Ammo_TAGrenade_Index];
 			}
 		}
-		for(new i = 0; i < count; i++)
+		
+		if(iAmmoIndex == -1)
+			return ThrowNativeError(SP_ERROR_NATIVE, "Failed to get m_iAmmo index for %d", id);
+		
+		for(int i = 0; i < iCount; i++)
 		{
-			if(i <= index-1 && IsValidEdict(weaponArray[i]))
+			if(i < index && IsValidEdict(iRemoveEnts[i]))
 			{
-				new client = GetEntPropEnt(weaponArray[i], Prop_Data, "m_hOwnerEntity");
+				int client = GetEntPropEnt(iRemoveEnts[i], Prop_Data, "m_hOwnerEntity");
+				
 				if(client != -1)
 				{
-					new gcount = Restrict_GetClientGrenadeCount(client, id);
-					if(gcount == 0)
+					int iGrenadeCount = Restrict_GetClientGrenadeCount(client, id);
+					
+					if(iGrenadeCount == 0)
 						continue;
 					
-					if(gcount == 1)
+					if(iGrenadeCount == 1)
 					{
-						if(Restrict_RemoveWeaponDrop(client, weaponArray[i]))
+						if(Restrict_RemoveWeaponDrop(client, iRemoveEnts[i]))
 						{
 							Restrict_RefundMoney(client, id);
 						}
 					}
 					else
 					{
-						SetEntProp(client, Prop_Send, "m_iAmmo", gcount-1, _, ammoindex);
+						SetEntProp(client, Prop_Send, "m_iAmmo", iGrenadeCount-1, _, iAmmoIndex);
 						Restrict_RefundMoney(client, id);
 					}
 				}
@@ -225,14 +297,14 @@ public Native_RemoveRandom(Handle:hPlugin, iNumParams)
 	}
 	else if(slot != SlotNone)
 	{
-		for(new i = 0; i < count; i++)
+		for(int i = 0; i < iCount; i++)
 		{
-			if(i <= index-1 && IsValidEdict(weaponArray[i]))
+			if(i < index && IsValidEdict(iRemoveEnts[i]))
 			{
-				new client = GetEntPropEnt(weaponArray[i], Prop_Data, "m_hOwnerEntity");
+				int client = GetEntPropEnt(iRemoveEnts[i], Prop_Data, "m_hOwnerEntity");
 				if(client != -1)
 				{
-					if(Restrict_RemoveWeaponDrop(client, weaponArray[i]))
+					if(Restrict_RemoveWeaponDrop(client, iRemoveEnts[i]))
 					{
 						Restrict_RefundMoney(client, id);
 					}
@@ -242,249 +314,276 @@ public Native_RemoveRandom(Handle:hPlugin, iNumParams)
 	}
 	else
 	{
-		for(new i = 0; i < count; i++)
+		for(int i = 0; i < iCount; i++)
 		{
-			if(i > index -1)
-				break;
-			
-			if(IsClientInGame(weaponArray[i]))
+			if(i < index && IsClientInGame(iRemoveEnts[i]))
 			{
-				if(Restrict_RemoveSpecialItem(weaponArray[i], id))
+				if(Restrict_RemoveSpecialItem(iRemoveEnts[i], id))
 				{
-					Restrict_RefundMoney(weaponArray[i], id);
+					Restrict_RefundMoney(iRemoveEnts[i], id);
 				}
 			}
 		}
 	}
 	return 1;
 }
-public Native_GetTeamWeaponCount(Handle:hPlugin, iNumParams)
+
+public int Native_GetTeamWeaponCount(Handle hPlugin, int iNumParams)
 {
-	new team = GetNativeCell(1);
-	new WeaponID:id = GetNativeCell(2);
-	if(!IsValidTeam(team))
+	int iTeam = GetNativeCell(1);
+	CSWeaponID id = GetNativeCell(2);
+	
+	if(!IsValidTeam(iTeam))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", team);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", iTeam);
 	}
-	if(!IsValidWeaponID(id))
+	
+	if(!CSWeapons_IsValidID(id, true))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
 	}
-	new weaponcount = 0;
-	new WeaponSlot:slot = GetSlotFromWeaponID(id);
-	for(new i = 1; i <= MaxClients; i++)
+	
+	int iWeaponCount = 0;
+	WeaponSlot slot = CSWeapons_GetWeaponSlot(id);
+	
+	for(int i = 1; i <= MaxClients; i++)
 	{
-		if(!IsClientInGame(i) || Restrict_ImmunityCheck(i) || GetClientTeam(i) != team)
+		if(!IsClientInGame(i) || Restrict_ImmunityCheck(i) || GetClientTeam(i) != iTeam)
 			continue;
 		
 		if(slot == SlotGrenade)
 		{
-			weaponcount += Restrict_GetClientGrenadeCount(i, id);
+			iWeaponCount += Restrict_GetClientGrenadeCount(i, id);
 		}
 		else if(slot == SlotNone)
 		{
 			if(Restrict_HasSpecialItem(i, id))
-				weaponcount++;
+				iWeaponCount++;
 		}
 		else
 		{
 			if(Restrict_GetWeaponIDFromSlot(i, slot) == id)
-				weaponcount++;
+				iWeaponCount++;
 		}
 	}
-	return weaponcount;
+	return iWeaponCount;
 }
-public Native_GetRestrictValue(Handle:hPlugin, iNumParams)
+
+public int Native_GetRestrictValue(Handle hPlugin, int iNumParams)
 {
-	new team = GetNativeCell(1);
-	new WeaponID:id = GetNativeCell(2);
-	if(!IsValidTeam(team))
+	int iTeam = GetNativeCell(1);
+	CSWeaponID id = GetNativeCell(2);
+	
+	if(!IsValidTeam(iTeam))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", team);
-	}
-	if(!IsValidWeaponID(id))
-	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
-	}
-	new val = -1;
-	if(team == CS_TEAM_T && id != WEAPON_DEFUSER)
-	{
-		new arraycell = CvarArrayHandleValT[_:id];
-		if(arraycell == -1)
-			return -1;
-		val = GetConVarInt(hRestrictCVarsT[arraycell]);
-	}
-	else if(team == CS_TEAM_CT && id != WEAPON_C4)
-	{
-		new arraycell = CvarArrayHandleValCT[_:id];
-		if(arraycell == -1)
-			return -1;
-		val = GetConVarInt(hRestrictCVarsCT[arraycell]);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", iTeam);
 	}
 	
-	if(val <= -1)
+	if(!CSWeapons_IsValidID(id, true))
+	{
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
+	}
+	
+	int iRestrictValue = -1;
+	
+	if(iTeam == CS_TEAM_T && hRestrictCVars[view_as<int>(id)][CVarTeam_T])
+	{
+		iRestrictValue = hRestrictCVars[view_as<int>(id)][CVarTeam_T].IntValue;
+	}
+	else if(iTeam == CS_TEAM_CT && hRestrictCVars[view_as<int>(id)][CVarTeam_CT])
+	{
+		iRestrictValue = hRestrictCVars[view_as<int>(id)][CVarTeam_CT].IntValue;
+	}
+	
+	if(iRestrictValue <= -1)
 		return -1;
 		
-	return val;
+	return iRestrictValue;
 }
-public Native_GetWeaponIDExtended(Handle:hPlugin, iNumParams)
+
+public int Native_GetWeaponIDExtended(Handle hPlugin, int iNumParams)
 {
-	decl String:weapon[WEAPONARRAYSIZE];
-	GetNativeString(1, weapon, sizeof(weapon));
+	char szWeapon[WEAPONARRAYSIZE];
+	GetNativeString(1, szWeapon, sizeof(szWeapon));
 	
-	new WeaponID:id = GetWeaponID(weapon);
+	CSWeaponID id = CS_AliasToWeaponID(szWeapon);
 	
-	if(id != WEAPON_NONE)
-		return _:id;
+	if(id != CSWeapon_NONE || g_iEngineVersion == Engine_CSGO) // CS:GO has no aliases nor does it call WeaponIDFromClassname()
+		return view_as<int>(id);
 	
-	//Check for weird buy strings...
-	decl String:weapon2[WEAPONARRAYSIZE];
-	CS_GetTranslatedWeaponAlias(weapon, weapon2, sizeof(weapon2));
+	// CS:S has aliases and allows for bizzare buy strings such as buy myamazingak47;
+	char szAlias[WEAPONARRAYSIZE];
+	CS_GetTranslatedWeaponAlias(szWeapon, szAlias, sizeof(szAlias));
 	
-	id = WeaponID:_:CS_AliasToWeaponID(weapon2); //New method as of 1.4.3
+	id = CS_AliasToWeaponID(szAlias);
 	
-	/*for(new i = 0; i < MAXALIASES; i++)
+	if(id != CSWeapon_NONE)
+		return view_as<int>(id);
+	
+	//Oh god...
+	for(int i = 0; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
 	{
-		if(StrContains(weapon2, g_WeaponAliasNames[i], false) != -1)
+		if(CSWeapons_IsValidID(view_as<CSWeaponID>(i), true))
 		{
-			id = GetWeaponID(g_WeaponAliasReplace[i]);
+			CSWeapons_GetAlias(view_as<CSWeaponID>(i), szAlias, sizeof(szAlias), true);
 			
-			if(id != WEAPON_NONE)
-				return _:id;
+			if(StrContains(szWeapon, szAlias, false) != -1)
+				return view_as<int>(i);
 		}
 	}
 	
-	for(new i = 1; i < _:WeaponID; i++)
-	{
-		if(StrContains(weapon2, weaponNames[WeaponID:i], false) != -1)
-		{
-			return _:WeaponID:i;
-		}
-	}*/
-	
-	return _:id;
+	return view_as<int>(CSWeapon_NONE);
 }
-public Native_GetClientGrenadeCount(Handle:hPlugin, iNumParams)
+
+public int Native_GetClientGrenadeCount(Handle hPlugin, int iNumParams)
 {
-	new client = GetNativeCell(1);
-	new WeaponID:id = GetNativeCell(2);
+	int client = GetNativeCell(1);
+	CSWeaponID id = GetNativeCell(2);
+	
 	if(!IsValidClient(client))
 	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "Client index %d is invalid.", client);
 	}
-	if(!IsValidWeaponID(id))
+	
+	if(!CSWeapons_IsValidID(id))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
 	}
-	new index = -1;
+	
+	int iAmmoIndex = -1;
+	
 	switch(id)
 	{
-		case WEAPON_HEGRENADE:
+		case CSWeapon_HEGRENADE:
 		{
-			index = HEGRENADE_AMMO;
+			iAmmoIndex = iGrenadeAmmoIndex[Ammo_HEGrenade_Index];
 		}
-		case WEAPON_FLASHBANG:
+		case CSWeapon_FLASHBANG:
 		{
-			index = FLASH_AMMO;
+			iAmmoIndex = iGrenadeAmmoIndex[Ammo_Flashbang_Index];
 		}
-		case WEAPON_SMOKEGRENADE:
+		case CSWeapon_SMOKEGRENADE:
 		{
-			index = SMOKE_AMMO;
+			iAmmoIndex = iGrenadeAmmoIndex[Ammo_Smokegrenade_Index];
 		}
-		case WEAPON_INCGRENADE, WEAPON_MOLOTOV:
+		case CSWeapon_INCGRENADE, CSWeapon_MOLOTOV:
 		{
-			index = INC_AMMO;
+			iAmmoIndex = iGrenadeAmmoIndex[Ammo_IncGrenade_Index];
 		}
-		case WEAPON_DECOY:
+		case CSWeapon_DECOY:
 		{
-			index = DECOY_AMMO;
+			iAmmoIndex = iGrenadeAmmoIndex[Ammo_DecoyGrenade_Index];
+		}
+		case CSWeapon_TAGGRENADE:
+		{
+			iAmmoIndex = iGrenadeAmmoIndex[Ammo_TAGrenade_Index];
 		}
 		default:
 		{
-			return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is not a grenade.", _:id);
+			return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is not a grenade.", id);
 		}
 	}
-	return GetEntProp(client, Prop_Send, "m_iAmmo", _, index);
+	
+	if(iAmmoIndex == -1)
+		return ThrowNativeError(SP_ERROR_NATIVE, "Failed to get m_iAmmo index for %d", id);
+	
+	return GetEntProp(client, Prop_Send, "m_iAmmo", _, iAmmoIndex);
 }
-public Native_GetWeaponIDFromSlot(Handle:hPlugin, iNumParams)
+
+public int Native_GetWeaponIDFromSlot(Handle hPlugin, int iNumParams)
 {
-	new client = GetNativeCell(1);
-	new WeaponSlot:slot = GetNativeCell(2);
+	int client = GetNativeCell(1);
+	WeaponSlot slot = GetNativeCell(2);
 	
 	if(!IsValidClient(client))
 	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "Client index %d is invalid.", client);
 	}
-	if(!IsValidWeaponSlot(slot))
+	
+	if(slot == SlotInvalid || slot == SlotNone)
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon slot index %d is invalid.", _:slot);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon slot index %d is invalid.", slot);
 	}
-	new ent = GetPlayerWeaponSlot(client, _:slot);
+	
+	int ent = GetPlayerWeaponSlot(client, view_as<int>(slot));
 		
 	if(ent != -1)
 	{
-		return _:GetWeaponIDFromEnt(ent);
+		return view_as<int>(GetWeaponIDFromEnt(ent));
 	}
-	return _:WEAPON_NONE;
+	
+	return 0;
 }
-public Native_RemoveSpecialItem(Handle:hPlugin, iNumParams)
+
+public int Native_RemoveSpecialItem(Handle hPlugin, int iNumParams)
 {
-	new client = GetNativeCell(1);
-	new WeaponID:id = GetNativeCell(2);
+	int client = GetNativeCell(1);
+	CSWeaponID id = GetNativeCell(2);
+	
 	if(!IsValidClient(client))
 	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "Client index %d is invalid.", client);
 	}
-	if(!IsValidWeaponID(id))
+	if(!CSWeapons_IsValidID(id, true))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
 	}
-	if(id == WEAPON_DEFUSER && GetEntProp(client, Prop_Send, "m_bHasDefuser") !=0)
+	
+	if((id == CSWeapon_DEFUSER || id == CSWeapon_CUTTERS) && GetEntProp(client, Prop_Send, "m_bHasDefuser") !=0)
 	{
 		SetEntProp(client, Prop_Send, "m_bHasDefuser", 0);
 		return true;
 	}
-	else if(id == WEAPON_ASSAULTSUIT && GetEntProp(client, Prop_Send, "m_ArmorValue") != 0 && GetEntProp(client, Prop_Send, "m_bHasHelmet") != 0)
+	else if(id == CSWeapon_ASSAULTSUIT && GetEntProp(client, Prop_Send, "m_ArmorValue") != 0 && GetEntProp(client, Prop_Send, "m_bHasHelmet") != 0)
 	{
 		SetEntProp(client, Prop_Send, "m_ArmorValue", 0);
 		SetEntProp(client, Prop_Send, "m_bHasHelmet", 0);
 		return true;
 	}
-	else if(id == WEAPON_KEVLAR && GetEntProp(client, Prop_Send, "m_ArmorValue") != 0 && GetEntProp(client, Prop_Send, "m_bHasHelmet") == 0)
+	else if(id == CSWeapon_KEVLAR && GetEntProp(client, Prop_Send, "m_ArmorValue") != 0 && GetEntProp(client, Prop_Send, "m_bHasHelmet") == 0)
 	{
 		SetEntProp(client, Prop_Send, "m_ArmorValue", 0);
 		return true;
 	}
-	else if(id == WEAPON_NIGHTVISION && GetEntProp(client, Prop_Send, "m_bHasNightVision") !=0)
+	else if(id == CSWeapon_NIGHTVISION && GetEntProp(client, Prop_Send, "m_bHasNightVision") !=0)
 	{
 		SetEntProp(client, Prop_Send, "m_bHasNightVision", 0);
 		return true;
 	}
+	else if(id == CSWeapon_HEAVYASSAULTSUIT && GetEntProp(client, Prop_Send, "m_bHasHeavyArmor") != 0)
+	{
+		SetEntProp(client, Prop_Send, "m_bHasHeavyArmor", 0);
+		return true;
+	}
 	return false;
 }
-public Native_CanBuyWeapon(Handle:hPlugin, iNumParams)
+
+public int Native_CanBuyWeapon(Handle hPlugin, int iNumParams)
 {
-	new client = GetNativeCell(1);
-	new team = GetNativeCell(2);
-	new WeaponID:id = GetNativeCell(3);
-	new bool:blockhook = GetNativeCell(4);
+	int client = GetNativeCell(1);
+	int iTeam = GetNativeCell(2);
+	CSWeaponID id = GetNativeCell(3);
+	bool blockhook = GetNativeCell(4);
+	
 	if(!IsValidClient(client))
 	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "Client index %d is invalid.", client);
 	}
-	if(!IsValidTeam(team))
+	if(!IsValidTeam(iTeam))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", team);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", iTeam);
 	}
-	if(!IsValidWeaponID(id))
+	if(!CSWeapons_IsValidID(id, true))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
 	}
-	new CanBuyResult:result = CanBuy_Block;
-	new maxamount = Restrict_GetRestrictValue(team, id);
+	
+	CanBuyResult result = CanBuy_Block;
+	int iRestrictVal = Restrict_GetRestrictValue(iTeam, id);
+	
 	if(!Restrict_IsSpecialRound())
 	{
-		if(maxamount == -1 || Restrict_ImmunityCheck(client) || (Restrict_GetTeamWeaponCount(team, id) < maxamount))
+		if(iRestrictVal == -1 || Restrict_ImmunityCheck(client) || (Restrict_GetTeamWeaponCount(iTeam, id) < iRestrictVal))
 			result = CanBuy_Allow;
 	}
 	else if(Restrict_AllowedForSpecialRound(id))
@@ -492,67 +591,77 @@ public Native_CanBuyWeapon(Handle:hPlugin, iNumParams)
 		//If pistol round always allow any pistol
 		//If knife round always allow knife
 		//If Warmup always allow warmup weapon
-		new WeaponSlot:slot = GetSlotFromWeaponID(id);
+		WeaponType type = CSWeapons_GetWeaponType(id);
+		
 		#if defined WARMUP
-		if((g_currentRoundSpecial == RoundType_Pistol && slot == SlotPistol) || (g_currentRoundSpecial == RoundType_Knife && slot == SlotKnife) || (g_currentRoundSpecial == RoundType_Warmup && id == g_iWarmupWeapon))
+		if((g_currentRoundSpecial == RoundType_Pistol && type == WeaponTypePistol) || (g_currentRoundSpecial == RoundType_Knife && type == WeaponTypeKnife ) || (g_currentRoundSpecial == RoundType_Warmup && id == g_iWarmupWeapon))
 		#else
-		if((g_currentRoundSpecial == RoundType_Pistol && slot == SlotPistol) || (g_currentRoundSpecial == RoundType_Knife && slot == SlotKnife))
+		if((g_currentRoundSpecial == RoundType_Pistol && type == WeaponTypePistol) || (g_currentRoundSpecial == RoundType_Knife && type == WeaponTypeKnife))
 		#endif
 			result = CanBuy_Allow;
-		else if(maxamount == -1 || Restrict_ImmunityCheck(client) || (Restrict_GetTeamWeaponCount(team, id) < maxamount))
+		else if(iRestrictVal == -1 || Restrict_ImmunityCheck(client) || (Restrict_GetTeamWeaponCount(iTeam, id) < iRestrictVal))
 			result = CanBuy_Allow;
 	}
+	
 	if(!blockhook)
 	{
-		new CanBuyResult:orgresult = result;
-		new Action:res = Plugin_Continue;
+		CanBuyResult orgresult = result;
+		Action res = Plugin_Continue;
+		
 		Call_StartForward(hCanBuyForward);
 		Call_PushCell(client);
-		Call_PushCell(team);
+		Call_PushCell(iTeam);
 		Call_PushCell(id);
 		Call_PushCellRef(result);
 		Call_Finish(res);
+		
 		if(res == Plugin_Continue)
-			return _:orgresult;
+			return view_as<int>(orgresult);
 		if(res >= Plugin_Handled)
-			return _:CanBuy_Block;
+			return view_as<int>(CanBuy_Block);
 	}
-	return _:result;
+	return view_as<int>(result);
 }
-public Native_CanPickupWeapon(Handle:hPlugin, iNumParams)
+
+public int Native_CanPickupWeapon(Handle hPlugin, int iNumParams)
 {
-	new client = GetNativeCell(1);
-	new team = GetNativeCell(2);
-	new WeaponID:id = GetNativeCell(3);
-	new bool:blockhook = GetNativeCell(4);
+	int client = GetNativeCell(1);
+	int iTeam = GetNativeCell(2);
+	CSWeaponID id = GetNativeCell(3);
+	bool blockhook = GetNativeCell(4);
+	
 	if(!IsValidClient(client))
 	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "Client index %d is invalid.", client);
 	}
-	if(!IsValidTeam(team))
+	if(!IsValidTeam(iTeam))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", team);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", iTeam);
 	}
-	if(!IsValidWeaponID(id))
+	if(!CSWeapons_IsValidID(id, true))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
 	}
-	new bool:result = false;
-	new restrictval = Restrict_GetRestrictValue(team, id);
-	new teamval = Restrict_GetTeamWeaponCount(team, id);
+	
+	bool result = false;
+	int iRestrictVal = Restrict_GetRestrictValue(iTeam, id);
+	int iCount = Restrict_GetTeamWeaponCount(iTeam, id);
+	
 	if(Restrict_IsWarmupRound())
 	{
-		if(Restrict_IsWarmupWeapon(id) || id == WEAPON_KNIFE)
+		WeaponType type = CSWeapons_GetWeaponType(id);
+		
+		if(Restrict_IsWarmupWeapon(id) || (type == WeaponTypeKnife))
 			result = true;
 	}
 	else if(!Restrict_IsSpecialRound())
 	{
-		if(id == WEAPON_AWP && !GetConVarBool(AwpAllowPickup))
+		if(id == CSWeapon_AWP && !hAWPAllowPickup.BoolValue)
 		{
-			if(restrictval == -1 || Restrict_ImmunityCheck(client) || (teamval < restrictval))
+			if(iRestrictVal == -1 || Restrict_ImmunityCheck(client) || (iCount < iRestrictVal))
 				result = true;
 		}
-		else if(restrictval == -1 || Restrict_ImmunityCheck(client) || (teamval < restrictval) || GetConVarBool(AllowPickup))
+		else if(iRestrictVal == -1 || Restrict_ImmunityCheck(client) || (iCount < iRestrictVal) || hAllowPickup.BoolValue)
 			result = true;
 	}
 	else if(Restrict_AllowedForSpecialRound(id))
@@ -560,26 +669,28 @@ public Native_CanPickupWeapon(Handle:hPlugin, iNumParams)
 		//If pistol round always allow any pistol
 		//If knife round always allow knife
 		//If Warmup always allow warmup weapon
-		new WeaponType:type = GetWeaponTypeFromID(id);
+		WeaponType type = CSWeapons_GetWeaponType(id);
+		
 		#if defined WARMUP
 		if((g_currentRoundSpecial == RoundType_Pistol && type == WeaponTypePistol) || (g_currentRoundSpecial == RoundType_Knife && type == WeaponTypeKnife) || (g_currentRoundSpecial == RoundType_Warmup && id == g_iWarmupWeapon))
 		#else
 		if((g_currentRoundSpecial == RoundType_Pistol && type == WeaponTypePistol) || (g_currentRoundSpecial == RoundType_Knife && type == WeaponTypeKnife))
 		#endif
 			result = true;
-		else if(restrictval == -1 || Restrict_ImmunityCheck(client) || (teamval < restrictval))
+		else if(iRestrictVal == -1 || Restrict_ImmunityCheck(client) || (iCount < iRestrictVal))
 			result = true;
 	}
 	if(!blockhook)
 	{
-		new bool:orgresult = result;
-		new Action:res = Plugin_Continue;
+		bool orgresult = result;
+		Action res = Plugin_Continue;
 		Call_StartForward(hCanPickupForward);
 		Call_PushCell(client);
-		Call_PushCell(team);
+		Call_PushCell(iTeam);
 		Call_PushCell(id);
 		Call_PushCellRef(result);
 		Call_Finish(res);
+		
 		if(res == Plugin_Continue)
 			return orgresult;
 		if(res >= Plugin_Handled)
@@ -587,13 +698,15 @@ public Native_CanPickupWeapon(Handle:hPlugin, iNumParams)
 	}
 	return result;
 }
-public Native_IsSpecialRound(Handle:hPlugin, iNumParams)
+
+public int Native_IsSpecialRound(Handle hPlugin, int iNumParams)
 {
 	if(g_currentRoundSpecial == RoundType_None)
 		return false;
 	return true;
 }
-public Native_IsWarmupRound(Handle:hPlugin, iNumParams)
+
+public int Native_IsWarmupRound(Handle hPlugin, int iNumParams)
 {
 	#if defined WARMUP
 	if(g_currentRoundSpecial == RoundType_Warmup)
@@ -601,281 +714,309 @@ public Native_IsWarmupRound(Handle:hPlugin, iNumParams)
 	#endif
 	return false;
 }
-public Native_HasSpecialItem(Handle:hPlugin, iNumParams)
+
+public int Native_HasSpecialItem(Handle hPlugin, int iNumParams)
 {
-	new client = GetNativeCell(1);
-	new WeaponID:id = GetNativeCell(2);
+	int client = GetNativeCell(1);
+	CSWeaponID id = GetNativeCell(2);
+	
 	if(!IsValidClient(client))
 	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "Client index %d is invalid.", client);
 	}
-	if(!IsValidWeaponID(id))
+	if(!CSWeapons_IsValidID(id, true))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
 	}
-	if(id == WEAPON_DEFUSER && GetEntProp(client, Prop_Send, "m_bHasDefuser") != 0)
+	
+	if(id == CSWeapon_DEFUSER && GetEntProp(client, Prop_Send, "m_bHasDefuser") != 0)
 		return true;
-	else if(id == WEAPON_ASSAULTSUIT && GetEntProp(client, Prop_Send, "m_ArmorValue") != 0 && GetEntProp(client, Prop_Send, "m_bHasHelmet") != 0)
+	else if(id == CSWeapon_ASSAULTSUIT && GetEntProp(client, Prop_Send, "m_ArmorValue") != 0 && GetEntProp(client, Prop_Send, "m_bHasHelmet") != 0)
 		return true;
-	else if(id == WEAPON_KEVLAR && GetEntProp(client, Prop_Send, "m_ArmorValue") != 0 && GetEntProp(client, Prop_Send, "m_bHasHelmet") == 0)
+	else if(id == CSWeapon_KEVLAR && GetEntProp(client, Prop_Send, "m_ArmorValue") != 0 && GetEntProp(client, Prop_Send, "m_bHasHelmet") == 0)
 		return true;
-	else if(id == WEAPON_NIGHTVISION && GetEntProp(client, Prop_Send, "m_bHasNightVision") != 0)
+	else if(id == CSWeapon_NIGHTVISION && GetEntProp(client, Prop_Send, "m_bHasNightVision") != 0)
+		return true;
+	else if(id == CSWeapon_HEAVYASSAULTSUIT && GetEntProp(client, Prop_Send, "m_bHasHeavyArmor") != 0)
 		return true;
 	
 	return false;
 }
-public Native_SetRestriction(Handle:hPlugin, iNumParams)
+
+public int Native_SetRestriction(Handle hPlugin, int iNumParams)
 {
-	new WeaponID:id = GetNativeCell(1);
-	new team = GetNativeCell(2);
-	new amount = GetNativeCell(3);
+	CSWeaponID id = GetNativeCell(1);
+	int iTeam = GetNativeCell(2);
+	int iAmount = GetNativeCell(3);
+	
 	#if defined PERPLAYER //avoid warnings this is only needed if perplayer is compiled in.
-	new bool:override = GetNativeCell(4);
+	bool bOverride = GetNativeCell(4);
 	#endif
-	if(!IsValidTeam(team))
+	
+	if(!IsValidTeam(iTeam))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", team);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", iTeam);
 	}
-	if(!IsValidWeaponID(id))
+	if(!CSWeapons_IsValidID(id, true))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
 	}
-	if(amount < -1)
-		amount = -1;
-	new arraycell = -1;
-	if(team == CS_TEAM_T && id != WEAPON_DEFUSER)
+	
+	if(iAmount < -1)
+		iAmount = -1;
+	
+	if(iTeam == CS_TEAM_T)
 	{
-		arraycell = CvarArrayHandleValT[_:id];
-		if(arraycell == -1)
-			return false;
-		
-		SetConVarInt(hRestrictCVarsT[arraycell], amount, true, false);
+		hRestrictCVars[view_as<int>(id)][CVarTeam_T].SetInt(iAmount, true, false);
 	}
-	else if(team == CS_TEAM_CT && id != WEAPON_C4)
+	else if(iTeam == CS_TEAM_CT)
 	{
-		arraycell = CvarArrayHandleValCT[_:id];
-		if(arraycell == -1)
-			return false;
-		
-		SetConVarInt(hRestrictCVarsCT[arraycell], amount, true, false);
+		hRestrictCVars[view_as<int>(id)][CVarTeam_CT].SetInt(iAmount, true, false);
 	}
+	
 	#if defined PERPLAYER
-	if(override)
+	if(bOverride)
 	{
-		Restrict_AddToOverride(team, id);
+		Restrict_AddToOverride(iTeam, id);
 	}
 	#endif
+	
 	return true;
 }
-public Native_SetGroupRestriction(Handle:hPlugin, iNumParams)
+
+public int Native_SetGroupRestriction(Handle hPlugin, int iNumParams)
 {
-	new WeaponType:group = GetNativeCell(1);
-	new team = GetNativeCell(2);
-	new amount = GetNativeCell(3);
-	new bool:override = GetNativeCell(4);
-	if(!IsValidTeam(team))
+	WeaponType type = GetNativeCell(1);
+	int iTeam = GetNativeCell(2);
+	int iAmount = GetNativeCell(3);
+	bool bOverride = GetNativeCell(4);
+	
+	if(!IsValidTeam(iTeam))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", team);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", iTeam);
 	}
-	if(!IsValidWeaponGroup(group))
+	if(!IsValidWeaponGroup(type))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon group index %d is invalid.", _:group);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon group index %d is invalid.", type);
 	}
-	for(new i = 1; i < _:WeaponID; i++)
+	
+	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
 	{
-		if(group == GetWeaponTypeFromID(WeaponID:i))
-			Restrict_SetRestriction(WeaponID:i, team, amount, override);
+		CSWeaponID id = view_as<CSWeaponID>(i);
+		
+		if(CSWeapons_IsValidID(id, true) && type == CSWeapons_GetWeaponType(id))
+			Restrict_SetRestriction(id, iTeam, iAmount, bOverride);
 	}
 	return true;
 }
-public Native_GetRoundType(Handle:hPlugin, iNumParams)
+
+public int Native_GetRoundType(Handle hPlugin, int iNumParams)
 {
-	return _:g_currentRoundSpecial;
+	return view_as<int>(g_currentRoundSpecial);
 }
-public Native_CheckPlayerWeapons(Handle:hPlugin, iNumParams)
+
+public int Native_CheckPlayerWeapons(Handle hPlugin, int iNumParams)
 {
-	for(new i = 1; i < _:WeaponID; i++)
+	int iVal;
+	int iCount;
+	
+	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS); i++)
     {
-		if(WeaponID:i == WEAPON_SHIELD)//need to skip items.
+		CSWeaponID id = view_as<CSWeaponID>(i);
+		
+		if(!CSWeapons_IsValidID(id, true))
 			continue;
 		
-		if(WeaponID:i != WEAPON_DEFUSER)
+		for(int iTeam = CS_TEAM_T; iTeam <= CS_TEAM_CT; iTeam++)
 		{
-			new val = Restrict_GetRestrictValue(CS_TEAM_T, WeaponID:i);
+			iVal = Restrict_GetRestrictValue(iTeam, id);
 			
-			if(val == -1)
+			if(iVal == -1)
 				continue;
 			
-			new count = Restrict_GetTeamWeaponCount(CS_TEAM_T, WeaponID:i);
+			iCount = Restrict_GetTeamWeaponCount(iTeam, id);
 			
-			if(count > val)
-				Restrict_RemoveRandom(count-val, CS_TEAM_T, WeaponID:i);
-		}
-		if(WeaponID:i != WEAPON_C4)
-		{
-			new val = Restrict_GetRestrictValue(CS_TEAM_CT, WeaponID:i);
-			
-			if(val == -1)
-				continue;
-			
-			new count = Restrict_GetTeamWeaponCount(CS_TEAM_CT, WeaponID:i);
-			
-			if(count > val)
-				Restrict_RemoveRandom(count-val, CS_TEAM_CT, WeaponID:i);
+			if(iCount > iVal)
+				Restrict_RemoveRandom(iCount-iVal, iTeam, id);
 		}
 	}
 }
-public Native_RemoveWeaponDrop(Handle:hPlugin, iNumParams)
+
+public int Native_RemoveWeaponDrop(Handle hPlugin, int iNumParams)
 {
-	new client = GetNativeCell(1);
-	new entity = GetNativeCell(2);
+	int client = GetNativeCell(1);
+	int entity = GetNativeCell(2);
+	
 	if(!IsValidClient(client))
 	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "Client index %d is invalid.", client);
 	}
-	if(!IsValidEntity(entity))
+	if(!IsValidEdict(entity))
 	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon index %d is invalid.", entity);
 	}
+	
 	CS_DropWeapon(client, entity, true, true);
 	if(AcceptEntityInput(entity, "Kill"))
 		return true;
 	
 	return false;
 }
-public Native_ImmunityCheck(Handle:hPlugin, iNumParams)
+
+public int Native_ImmunityCheck(Handle hPlugin, int iNumParams)
 {
-	new client = GetNativeCell(1);
+	int client = GetNativeCell(1);
+	
 	if(!IsValidClient(client))
 	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "Client index %d is invalid.", client);
 	}
-	if(GetConVarInt(AdminImmunity) == 1 && CheckCommandAccess(client, "sm_restrict_immunity_level", ADMFLAG_RESERVATION))
+	
+	if(hAdminImmunity.BoolValue && CheckCommandAccess(client, "sm_restrict_immunity_level", ADMFLAG_RESERVATION))
 		return true;
 	
 	return false;
 }
-public Native_IsAllowedForSpecialRound(Handle:hPlugin, iNumParams)
+
+public int Native_IsAllowedForSpecialRound(Handle hPlugin, int iNumParams)
 {
-	new WeaponID:id = GetNativeCell(1);
-	if(!IsValidWeaponID(id))
+	CSWeaponID id = GetNativeCell(1);
+	if(!CSWeapons_IsValidID(id, true))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
 	}
-	//Get the easy stuff out of the way
-	//Always allow knife.
-	if(id == WEAPON_KNIFE)
+	
+	WeaponType type = CSWeapons_GetWeaponType(id);
+	
+	if(type == WeaponTypeKnife)
 		return true;
 	
-	new WeaponSlot:slot = GetSlotFromWeaponID(id);
 	//For pistol round and knife allow kevlar and stuff
-	if((g_currentRoundSpecial == RoundType_Pistol || g_currentRoundSpecial == RoundType_Knife) && (slot == SlotNone || slot == SlotC4))
+	if((g_currentRoundSpecial == RoundType_Pistol || g_currentRoundSpecial == RoundType_Knife) && (type == WeaponTypeArmor || type == WeaponTypeOther))
 		return true;
 	//Pistol round allow anything in slot 1
-	if(g_currentRoundSpecial == RoundType_Pistol && (slot == SlotPistol || slot == SlotGrenade))
+	if(g_currentRoundSpecial == RoundType_Pistol && (type == WeaponTypePistol || type == WeaponTypeGrenade))
 		return true;
+	
 	#if defined WARMUP
 	if(g_currentRoundSpecial == RoundType_Warmup && id == g_iWarmupWeapon)
 		return true;
 	#endif
+	
 	return false;
 }
-public Native_PlayRestrictSound(Handle:hPlugin, iNumParams)
+
+public int Native_PlayRestrictSound(Handle hPlugin, int iNumParams)
 {
-	new client = GetNativeCell(1);
-	new WeaponID:id = GetNativeCell(2);
+	int client = GetNativeCell(1);
+	CSWeaponID id = GetNativeCell(2);
+	
 	if(!IsValidClient(client))
 	{
 		return ThrowNativeError(SP_ERROR_NATIVE, "Client index %d is invalid.", client);
 	}
-	if(!IsValidWeaponID(id))
+	if(!CSWeapons_IsValidID(id, true))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
 	}
-	new Action:res = Plugin_Continue;
-	new String:forwardFile[PLATFORM_MAX_PATH];
-	strcopy(forwardFile, sizeof(forwardFile), g_sCachedSound);
+	
+	Action res = Plugin_Continue;
+	char szForwardFile[PLATFORM_MAX_PATH];
+	
+	strcopy(szForwardFile, sizeof(szForwardFile), g_sCachedSound);
 	
 	Call_StartForward(hRestrictSoundForward);
 	Call_PushCell(client);
 	Call_PushCell(id);
-	Call_PushStringEx(forwardFile, sizeof(forwardFile), SM_PARAM_STRING_COPY, SM_PARAM_COPYBACK);
+	Call_PushStringEx(szForwardFile, sizeof(szForwardFile), SM_PARAM_STRING_COPY, SM_PARAM_COPYBACK);
 	Call_Finish(res);
 	if(res == Plugin_Continue && g_bRestrictSound)
 		EmitSoundToClient(client, g_sCachedSound);
-	if(res == Plugin_Changed && IsSoundPrecached(forwardFile))
-		EmitSoundToClient(client, forwardFile);
+	if(res == Plugin_Changed && IsSoundPrecached(szForwardFile))
+		EmitSoundToClient(client, szForwardFile);
 	
 	return 1;
 }
-public Native_AddToOverride(Handle:hPlugin, iNumParams)
+
+public int Native_AddToOverride(Handle hPlugin, int iNumParams)
 {	
 	#if defined PERPLAYER
-	new team = GetNativeCell(1);
-	new WeaponID:id = GetNativeCell(2);
-	if(!IsValidTeam(team))
+	int iTeam = GetNativeCell(1);
+	CSWeaponID id = GetNativeCell(2);
+	
+	if(!IsValidTeam(iTeam))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", team);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", iTeam);
 	}
-	if(!IsValidWeaponID(id))
+	if(!CSWeapons_IsValidID(id, true))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
 	}
-	if(team == CS_TEAM_T)
-		g_bOverideT[_:id] = true;
-	if(team == CS_TEAM_CT)
-		g_bOverideCT[_:id] = true;
+	
+	if(iTeam == CS_TEAM_T)
+		g_bOverrideValues[view_as<int>(id)][CVarTeam_T] = true;
+	if(iTeam == CS_TEAM_CT)
+		g_bOverrideValues[view_as<int>(id)][CVarTeam_CT] = true;
 	#endif
 	return 1;
 }
-public Native_RemoveFromOverride(Handle:hPlugin, iNumParams)
+
+public int Native_RemoveFromOverride(Handle hPlugin, int iNumParams)
 {	
 	#if defined PERPLAYER
-	new team = GetNativeCell(1);
-	new WeaponID:id = GetNativeCell(2);
-	if(!IsValidTeam(team))
+	int iTeam = GetNativeCell(1);
+	CSWeaponID id = GetNativeCell(2);
+	
+	if(!IsValidTeam(iTeam))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", team);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", iTeam);
 	}
-	if(!IsValidWeaponID(id))
+	if(!CSWeapons_IsValidID(id, true))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
 	}
-	if(team == CS_TEAM_T)
-		g_bOverideT[_:id] = false;
-	if(team == CS_TEAM_CT)
-		g_bOverideCT[_:id] = false;
+	
+	if(iTeam == CS_TEAM_T)
+		g_bOverrideValues[view_as<int>(id)][CVarTeam_T] = false;
+	if(iTeam == CS_TEAM_CT)
+		g_bOverrideValues[view_as<int>(id)][CVarTeam_CT] = false;
 	#endif
 	return 1;
 }
-public Native_IsWeaponInOverride(Handle:hPlugin, iNumParams)
+
+public int Native_IsWeaponInOverride(Handle hPlugin, int iNumParams)
 {	
 	#if defined PERPLAYER
-	new team = GetNativeCell(1);
-	new WeaponID:id = GetNativeCell(2);
-	if(!IsValidTeam(team))
+	int iTeam = GetNativeCell(1);
+	CSWeaponID id = GetNativeCell(2);
+	
+	if(!IsValidTeam(iTeam))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", team);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Team index %d is invalid.", iTeam);
 	}
-	if(!IsValidWeaponID(id))
+	if(!CSWeapons_IsValidID(id, true))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
 	}
-	if(team == CS_TEAM_T && g_bOverideT[_:id])
+	
+	if(iTeam == CS_TEAM_T && g_bOverrideValues[view_as<int>(id)][CVarTeam_T])
 		return true;
-	if(team == CS_TEAM_CT && g_bOverideCT[_:id])
+	if(iTeam == CS_TEAM_CT && g_bOverrideValues[view_as<int>(id)][CVarTeam_CT])
 		return true;
 	#endif
 	return false;
 }
-public Native_IsWarmupWeapon(Handle:hPlugin, iNumParams)
+
+public int Native_IsWarmupWeapon(Handle hPlugin, int iNumParams)
 {	
 	#if defined WARMUP
-	new WeaponID:id = GetNativeCell(1);
-	if(!IsValidWeaponID(id))
+	CSWeaponID id = GetNativeCell(1);
+	
+	if(!CSWeapons_IsValidID(id, true))
 	{
-		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", _:id);
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is invalid.", id);
 	}
+	
 	return (g_iWarmupWeapon == id && Restrict_IsWarmupRound())? true:false;
 	#else
 	return false;

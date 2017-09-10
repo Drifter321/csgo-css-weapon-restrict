@@ -39,6 +39,7 @@ enum WeaponSlot
 	SlotKnife = 2,
 	SlotGrenade = 3,
 	SlotC4 = 4,
+	SlotNone = 5,
 };
 
 static char cstrike_szClassnames[][] =
@@ -94,17 +95,17 @@ static const WeaponSlot cstrike_iWeaponSlots[] =
 	SlotPrimmary,				SlotPrimmary,				SlotPrimmary,				SlotPrimmary,
 	SlotPrimmary,				SlotPrimmary,				SlotPrimmary,				SlotGrenade,
 	SlotPistol,					SlotPrimmary,				SlotPrimmary,				SlotKnife,
-	SlotPrimmary,				SlotInvalid,				SlotInvalid,				SlotPrimmary,
+	SlotPrimmary,				SlotNone,					SlotNone,					SlotPrimmary,
 	SlotPrimmary,				SlotPrimmary,				SlotPrimmary,				SlotPrimmary,
 	SlotPistol,					SlotKnife,					SlotPistol,					SlotPrimmary,
 	SlotPrimmary,				SlotPrimmary,				SlotPistol,					SlotPrimmary,
 	SlotPrimmary,				SlotPrimmary,				SlotKnife,					SlotGrenade,
-	SlotGrenade,				SlotGrenade,				SlotInvalid,				SlotInvalid,
-	SlotInvalid,				SlotC4,						SlotKnife,					SlotPrimmary,
+	SlotGrenade,				SlotGrenade,				SlotNone,					SlotNone,
+	SlotNone,					SlotC4,						SlotKnife,					SlotPrimmary,
 	SlotPistol,					SlotPistol,					SlotPistol,					SlotGrenade,
 	SlotKnife,					SlotKnife,					SlotKnife,					SlotKnife,
 	SlotKnife,					SlotKnife,					SlotKnife,					SlotKnife,
-	SlotKnife,					SlotKnife,					SlotInvalid
+	SlotKnife,					SlotKnife,					SlotNone
 };
 
 static const int cstrike_iBuyTeams[] =
@@ -138,25 +139,35 @@ enum TrieWeaponInfo
 	TrieWeapon_Max
 };
 
-static Handle hWeaponIDToInfoTrie = INVALID_HANDLE;
+static StringMap hWeaponIDToInfoTrie = null;
+static EngineVersion iEngineVersion;
 
-stock CSWeapons_Init()
+stock void CSWeapons_Init()
 {
-	if(hWeaponIDToInfoTrie == INVALID_HANDLE)
+	if(hWeaponIDToInfoTrie == null)
 	{
+		iEngineVersion = GetEngineVersion();
 		InitWeaponInfoTrie();
 	}
 }
 
-stock InitWeaponInfoTrie()
+static stock CSWeaponID AliastToID(const char [] szClassname) //Internal use only.
 {
-	hWeaponIDToInfoTrie = CreateTrie();
+	if(StrEqual(szClassname, "item_defuser"))
+		return CSWeapon_DEFUSER;
+		
+	return CS_AliasToWeaponID(szClassname);
+}
+
+static stock void InitWeaponInfoTrie()
+{
+	hWeaponIDToInfoTrie = new StringMap();
 	
 	int info[TrieWeapon_Max];
 	
 	for(int i = 0; i < sizeof(cstrike_szClassnames); i++)
 	{
-		CSWeaponID weaponID = CS_AliasToWeaponID(cstrike_szClassnames[i]);
+		CSWeaponID weaponID = AliastToID(cstrike_szClassnames[i]);
 		
 		if(weaponID == CSWeapon_NONE)
 			continue;
@@ -174,24 +185,24 @@ stock InitWeaponInfoTrie()
 		char key[10];
 		IntToString(view_as<int>(weaponID), key, sizeof(key));
 		
-		SetTrieArray(hWeaponIDToInfoTrie, key, info[0], view_as<int>(TrieWeapon_Max));
+		hWeaponIDToInfoTrie.SetArray(key, info[0], view_as<int>(TrieWeapon_Max));
 	}
 }
 
-stock GetWeaponInfoArrySize()
+stock int CSWeapons_GetWeaponInfoArrySize()
 {
-	return GetTrieSize(hWeaponIDToInfoTrie);
+	return hWeaponIDToInfoTrie.Size;
 }
 
 static stock bool GetWeaponInfoFromID(CSWeaponID weaponID, int arry[TrieWeapon_Max])
 {
 	char key[10];
 	IntToString(view_as<int>(weaponID), key, sizeof(key));
-		
-	return GetTrieArray(hWeaponIDToInfoTrie, key, arry[0], view_as<int>(TrieWeapon_Max));
+	
+	return hWeaponIDToInfoTrie.GetArray(key, arry[0], sizeof(arry));
 }
 
-stock int GetWeaponBuyTeam(CSWeaponID weaponID)
+stock int CSWeapons_GetWeaponBuyTeam(CSWeaponID weaponID)
 {
 	int info[TrieWeapon_Max];
 	
@@ -203,7 +214,7 @@ stock int GetWeaponBuyTeam(CSWeaponID weaponID)
 	return INVALID_TEAM;
 }
 
-stock WeaponType GetWeaponType(CSWeaponID weaponID)
+stock WeaponType CSWeapons_GetWeaponType(CSWeaponID weaponID)
 {
 	int info[TrieWeapon_Max];
 	
@@ -215,7 +226,7 @@ stock WeaponType GetWeaponType(CSWeaponID weaponID)
 	return WeaponTypeNone;
 }
 
-stock WeaponSlot GetWeaponSlot(CSWeaponID weaponID)
+stock WeaponSlot CSWeapons_GetWeaponSlot(CSWeaponID weaponID)
 {
 	int info[TrieWeapon_Max];
 	
@@ -227,7 +238,7 @@ stock WeaponSlot GetWeaponSlot(CSWeaponID weaponID)
 	return SlotInvalid;
 }
 
-stock bool GetWeaponClassname(CSWeaponID weaponID, char [] buffer, int size)
+stock bool CSWeapons_GetWeaponClassname(CSWeaponID weaponID, char [] buffer, int size)
 {
 	int info[TrieWeapon_Max];
 	
@@ -240,18 +251,51 @@ stock bool GetWeaponClassname(CSWeaponID weaponID, char [] buffer, int size)
 	return false;
 }
 
-stock CSWeaponID GetWeaponIDFromSnapshot(int index)
+stock int CSWeapons_GetWeaponPrice(int client, CSWeaponID weaponID, bool defaultprice = false)
+{
+	if(!CSWeapons_IsValidID(weaponID, true))
+		return 0;
+	else if(iEngineVersion == Engine_CSS && weaponID == CSWeapon_DEFUSER)
+		return 200;
+
+	return CS_GetWeaponPrice(client, weaponID, defaultprice);
+}
+
+stock bool CSWeapons_IsValidID(CSWeaponID weaponID, bool defuserValid = false)
+{
+	if(weaponID == CSWeapon_DEFUSER && defuserValid) //This is for CS:S
+		return true;
+	
+	return CS_IsValidWeaponID(weaponID);
+}
+
+stock int CSWeapons_GetAlias(CSWeaponID weaponID, char [] szBuffer, int size, bool defuserValid = false)
+{
+	if(CSWeapons_IsValidID(weaponID, defuserValid))
+	{
+		if(weaponID == CSWeapon_DEFUSER)
+			return strcopy(szBuffer, size, "defuser");
+			
+		return CS_WeaponIDToAlias(weaponID, szBuffer, size);
+	}
+	return strcopy(szBuffer, size, "");
+}
+
+stock CSWeaponID CSWeapons_GetWeaponIDFromSnapshot(int index)
 {	
-	if(index < 0 || index >= GetTrieSize(hWeaponIDToInfoTrie))
+	if(index < 0 || index >= hWeaponIDToInfoTrie.Size)
 		return CSWeapon_NONE;
 	
-	Handle hTemp = CreateTrieSnapshot(hWeaponIDToInfoTrie);
+	static StringMapSnapshot snap = null;
+	
+	if(snap == null)
+	{
+		snap = hWeaponIDToInfoTrie.SnapShot();
+	}
 	
 	char key[10];
 	
-	GetTrieSnapshotKey(hTemp, index, key, sizeof(key));
-	
-	delete hTemp;
+	snap.GetKey(index, key, sizeof(key));
 	
 	return view_as<CSWeaponID>(StringToInt(key));
 }

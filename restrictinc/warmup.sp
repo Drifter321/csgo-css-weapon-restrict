@@ -1,135 +1,167 @@
-new WeaponID:g_iWarmupWeapon = WEAPON_NONE;
-new warmupcount;
-new ffvalue;
+#define MAX_WARMUP_WEAPONS 25
+CSWeaponID g_iWarmupWeapon = CSWeapon_NONE;
+int iWarmupCount;
+int iFriendlyFire;
 
-new Handle:RespawnTimer[MAXPLAYERS+1];
+Handle RespawnTimer[MAXPLAYERS+1];
 
-RegisterWarmup()
+void RegisterWarmup()
 {
 	HookEvent("player_spawn", OnPlayerSpawn);
 	HookEvent("player_death", OnPlayerDeath);
 	HookEvent("hegrenade_detonate", OnHegrenadeDetonate);
 }
-KillRespawnTimer(client)
+
+void KillRespawnTimer(int client)
 {
-	if(RespawnTimer[client] != INVALID_HANDLE)
+	if(RespawnTimer[client] != null)
 	{
-		KillTimer(RespawnTimer[client]);
-		RespawnTimer[client] = INVALID_HANDLE;
+		delete RespawnTimer[client];
 	}
 }
-bool:StartWarmup()
+
+bool StartWarmup()
 {
-	for(new i = 1; i <= MaxClients; i++)
-		RespawnTimer[i] = INVALID_HANDLE;
+	for(int i = 1; i <= MaxClients; i++)
+		RespawnTimer[i] = null;
 	
 	g_iWarmupWeapon = GetWarmupWeapon();
 	
-	if(g_iWarmupWeapon == WEAPON_NONE)
+	if(g_iWarmupWeapon == CSWeapon_NONE)
 		return false;
 	
-	new String:file[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, file, sizeof(file), "configs/restrict/prewarmup.cfg");
-	RunFile(file);
+	char szPreConfig[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, szPreConfig, sizeof(szPreConfig), "configs/restrict/prewarmup.cfg");
+	RunFile(szPreConfig);
 	
 	StripGroundWeapons();
-	ffvalue = GetConVarInt(ffcvar);
 	
-	if(GetConVarBool(warmupff))
+	if(hFriendlyFire)
 	{
-		SetConVarInt(ffcvar, 0, true, false);
+		iFriendlyFire = hFriendlyFire.IntValue;
+	
+		if(hWarmupFriendlyFire.BoolValue)
+		{
+			hFriendlyFire.SetInt(0, true, false);
+		}
 	}
-	warmupcount = 1;
-	if(g_iGame == GAME_CSS)
+	
+	iWarmupCount = 1;
+	
+	if(g_iEngineVersion == Engine_CSS)
 	{
-		PrintCenterTextAll("%t", "WarmupCountdown", GetConVarInt(WarmupTime));
+		PrintCenterTextAll("%t", "WarmupCountdown", hWarmupTime.IntValue);
 	}
 	else
 	{
-		SetConVarInt(FindConVar("mp_do_warmup_period"), 0, true, false);
-		SetConVarInt(FindConVar("mp_warmuptime"), GetConVarInt(WarmupTime), true, false);
+		static ConVar mp_do_warmup_period_cvar = null;
+		static ConVar mp_warmuptime_cvar = null;
+		
+		if(mp_do_warmup_period_cvar == null)
+			mp_do_warmup_period_cvar = FindConVar("mp_do_warmup_period");
+		
+		if(mp_warmuptime_cvar == null)
+			mp_warmuptime_cvar = FindConVar("mp_warmuptime");
+		
+		if(mp_do_warmup_period_cvar)
+			mp_do_warmup_period_cvar.SetInt(0, true, false);
+		
+		if(mp_warmuptime_cvar)
+			mp_warmuptime_cvar.SetInt(hWarmupTime.IntValue, true, false);
+		
 		GameRules_SetProp("m_bWarmupPeriod", true, _, _, true);
-		GameRules_SetPropFloat("m_fWarmupPeriodEnd", (GetGameTime()+GetConVarFloat(WarmupTime)), _, true);
+		GameRules_SetPropFloat("m_fWarmupPeriodEnd", (GetGameTime()+hWarmupTime.FloatValue), _, true);
 	}
+	
 	CreateTimer(1.0, WarmupCount, _, TIMER_REPEAT|TIMER_FLAG_NO_MAPCHANGE);
 	OnWarmupStart_Post();
 	return true;
 }
-WeaponID:GetWarmupWeapon()
+
+CSWeaponID GetWarmupWeapon()
 {
-	decl String:file[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM,file,sizeof(file),"configs/restrict/warmup.cfg");
-	if(!FileExists(file))
+	char szWarmupConfig[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, szWarmupConfig, sizeof(szWarmupConfig), "configs/restrict/warmup.cfg");
+	
+	if(!FileExists(szWarmupConfig))
 	{
 		LogError("Cannot find warmup.cfg. Disabling warmup.");
-		return WEAPON_NONE;
+		return CSWeapon_NONE;
 	}
-	new Handle:hFile = OpenFile(file, "r");
-	decl WeaponID:iWeaponArray[_:WeaponID];
-	new String:weapon[WEAPONARRAYSIZE];
-	new weaponcount = 0;
-	while(!IsEndOfFile(hFile))
+	
+	File hWarmupConfig = OpenFile(szWarmupConfig, "r");
+	
+	CSWeaponID iWeaponArray[MAX_WARMUP_WEAPONS];
+	
+	char szFileLine[WEAPONARRAYSIZE];
+	int iWeaponCount = 0;
+	
+	while(!hWarmupConfig.EndOfFile())
 	{
-		ReadFileLine(hFile, weapon, sizeof(weapon));
-		if(strncmp(weapon, "//", 2) != 0)
+		hWarmupConfig.ReadLine(szFileLine, sizeof(szFileLine));
+		
+		if(strncmp(szFileLine, "//", 2) != 0)
 		{
-			TrimString(weapon);
-			new WeaponID:id = Restrict_GetWeaponIDExtended(weapon);
-			if(id == WEAPON_NONE)
+			TrimString(szFileLine);
+			
+			CSWeaponID id = Restrict_GetWeaponIDExtended(szFileLine);
+			
+			if(id == CSWeapon_NONE)
 				continue;
 			
-			new WeaponSlot:slot = GetSlotFromWeaponID(id);
+			WeaponSlot slot = CSWeapons_GetWeaponSlot(id);
 			
-			if(slot == SlotNone || slot == SlotUnknown)
+			if(slot == SlotInvalid || slot == SlotNone)
 				continue;
 			
-			iWeaponArray[weaponcount] = id;
-			weaponcount++;
+			iWeaponArray[iWeaponCount] = id;
+			iWeaponCount++;
 		}
 	}
-	CloseHandle(hFile);
 	
-	if(weaponcount == 0)
-		return WEAPON_NONE;
+	delete hWarmupConfig;
 	
-	new index = GetRandomInt(0, weaponcount-1);
+	if(iWeaponCount == 0)
+		return CSWeapon_NONE;
+	
+	int index = GetRandomInt(0, iWeaponCount-1);
 	
 	return iWeaponArray[index];
 }
-public Action:WarmupCount(Handle:timer)
+
+public Action WarmupCount(Handle timer)
 {
-	if(GetConVarInt(WarmupTime) <= warmupcount)
+	if(hWarmupTime.IntValue <= iWarmupCount)
 	{
 		EndWarmup();
-		if(g_iGame == GAME_CSS)
+		if(g_iEngineVersion == Engine_CSS)
 		{
 			ServerCommand("mp_restartgame 1");
 		}
 		
 		return Plugin_Stop;
 	}
-	if(g_iGame == GAME_CSS)
+	
+	if(g_iEngineVersion == Engine_CSS)
 	{
-		PrintCenterTextAll("%t", "WarmupCountdown", GetConVarInt(WarmupTime)-warmupcount);
+		PrintCenterTextAll("%t", "WarmupCountdown", hWarmupTime.IntValue-iWarmupCount);
 	}
-	else
-	{
-		GameRules_SetProp("m_bWarmupPeriod", true, _, _, true);
-		GameRules_SetPropFloat("m_fWarmupPeriodEnd", GetGameTime()+(GetConVarFloat(WarmupTime)-float(warmupcount)), _, true);
-		FireEvent(CreateEvent("round_announce_warmup", true));
-	}
-	warmupcount++;
+
+	iWarmupCount++;
+	
 	return Plugin_Continue;
 }
-EndWarmup()
+
+void EndWarmup()
 {
 	g_currentRoundSpecial = RoundType_None;
 	OnWarmupEnd_Post();
-	new String:file[PLATFORM_MAX_PATH];
-	BuildPath(Path_SM, file, sizeof(file), "configs/restrict/postwarmup.cfg");
-	RunFile(file);
+	
+	char szPostConfig[PLATFORM_MAX_PATH];
+	BuildPath(Path_SM, szPostConfig, sizeof(szPostConfig), "configs/restrict/postwarmup.cfg");
+	RunFile(szPostConfig);
 		
-	for(new i = 1; i <= MaxClients; i++)
+	for(int i = 1; i <= MaxClients; i++)
 	{
 		if(IsClientInGame(i))
 			KillRespawnTimer(i);
@@ -137,29 +169,33 @@ EndWarmup()
 		
 	CreateTimer(1.1, ResetFF, _, TIMER_FLAG_NO_MAPCHANGE);
 }
-public Action:ResetFF(Handle:timer)
+
+public Action ResetFF(Handle timer)
 {
 	//Check if special round was set
 	g_currentRoundSpecial = g_nextRoundSpecial;
 	g_nextRoundSpecial = RoundType_None;
-		
-	SetConVarInt(ffcvar, ffvalue, true, false);
+	
+	hFriendlyFire.SetInt(iFriendlyFire, true, false);	
 }
-GiveWarmupWeapon(client)
+
+void GiveWarmupWeapon(int client)
 {
-	if(g_iWarmupWeapon != WEAPON_KNIFE && IsClientInGame(client) && GetClientTeam(client) > CS_TEAM_SPECTATOR && Restrict_IsWarmupRound())
+	if((CSWeapons_GetWeaponSlot(g_iWarmupWeapon) != SlotKnife || g_iWarmupWeapon == CSWeapon_TASER) && IsClientInGame(client) && GetClientTeam(client) > CS_TEAM_SPECTATOR && Restrict_IsWarmupRound())
 	{
-		if(GetPlayerWeaponSlot(client, _:GetSlotFromWeaponID(g_iWarmupWeapon)) == -1 || (GetSlotFromWeaponID(g_iWarmupWeapon) == SlotKnife && g_iWarmupWeapon == WEAPON_TASER))// avoids giving player weapon twice for some odd reason grenade is given twice without this
+		if(GetPlayerWeaponSlot(client, view_as<int>(CSWeapons_GetWeaponSlot(g_iWarmupWeapon))) == -1 || g_iWarmupWeapon == CSWeapon_TASER)// avoids giving player weapon twice for some odd reason grenade is given twice without this
 		{
-			new String:weapon[WEAPONARRAYSIZE];
-			Format(weapon, sizeof(weapon), "weapon_%s", weaponNames[_:g_iWarmupWeapon]);
-			GivePlayerItem(client, weapon);
+			char szClassname[WEAPONARRAYSIZE];
+			
+			if(CSWeapons_GetWeaponClassname(g_iWarmupWeapon, szClassname, sizeof(szClassname)))
+				GivePlayerItem(client, szClassname);
 		}
 	}
 }
-public Action:OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcast)
+
+public Action OnPlayerSpawn(Event event, const char [] name, bool dontBroadcast)
 {
-	new client = GetClientOfUserId(GetEventInt(event, "userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	RespawnTimer[client] = INVALID_HANDLE;
 	
 	if(Restrict_IsWarmupRound() && IsClientInGame(client) && GetClientTeam(client) > CS_TEAM_SPECTATOR && IsPlayerAlive(client))
@@ -167,56 +203,61 @@ public Action:OnPlayerSpawn(Handle:event, const String:name[], bool:dontBroadcas
 		GiveWarmupWeapon(client);
 	}
 }
-public Action:OnPlayerDeath(Handle:event, const String:name[], bool:dontBroadcast)
+
+public Action OnPlayerDeath(Event event, const char [] name, bool dontBroadcast)
 {
-	if(Restrict_IsWarmupRound() && GetConVarInt(WarmupRespawn) == 1)
+	if(Restrict_IsWarmupRound() && hWarmupRespawn.BoolValue)
 	{
-		new userid = GetEventInt(event, "userid");
-		new client = GetClientOfUserId(userid);
+		int userid = event.GetInt("userid");
+		int client = GetClientOfUserId(userid);
 		
-		if(RespawnTimer[client] == INVALID_HANDLE)
-			RespawnTimer[client] = CreateTimer(GetConVarFloat(WarmupRespawnTime), RespawnFunc, userid, TIMER_FLAG_NO_MAPCHANGE);
+		if(RespawnTimer[client] == null)
+			RespawnTimer[client] = CreateTimer(hWarmupRespawnTime.FloatValue, RespawnFunc, userid, TIMER_FLAG_NO_MAPCHANGE);
 	}
 }
-public Action:OnHegrenadeDetonate(Handle:event, const String:name[], bool:dontBroadcast)
+
+public Action OnHegrenadeDetonate(Event event, const char [] name, bool dontBroadcast)
 {
-	if(!Restrict_IsWarmupRound() || g_iWarmupWeapon != WEAPON_HEGRENADE || !GetConVarBool(grenadegive))
+	if(!Restrict_IsWarmupRound() || g_iWarmupWeapon != CSWeapon_HEGRENADE || !hInfiniteGrenade.BoolValue)
 		return Plugin_Continue;
 	
-	new client = GetClientOfUserId(GetEventInt(event,"userid"));
+	int client = GetClientOfUserId(event.GetInt("userid"));
 	
 	if(client != 0 && IsClientInGame(client) && GetClientTeam(client) > CS_TEAM_SPECTATOR && IsPlayerAlive(client))
 	{
-		if(Restrict_GetClientGrenadeCount(client, WEAPON_HEGRENADE) <= 0)
+		if(Restrict_GetClientGrenadeCount(client, CSWeapon_HEGRENADE) <= 0)
 		{
-			new weapon = GivePlayerItem(client,"weapon_hegrenade");
+			int weapon = GivePlayerItem(client,"weapon_hegrenade");
 			SetEntPropEnt(client, Prop_Send, "m_hActiveWeapon", weapon);
 		}
 	}
 	
 	return Plugin_Continue;
 }
-public Action:RespawnFunc(Handle:timer, any:userid)
+
+public Action RespawnFunc(Handle timer, int userid)
 {
-	new client = GetClientOfUserId(userid);
+	int client = GetClientOfUserId(userid);
 	
 	if(client != 0)
-		RespawnTimer[client] = INVALID_HANDLE;
+		RespawnTimer[client] = null;
 		
-	if(client != 0 && GetConVarInt(WarmupRespawn) == 1 && Restrict_IsWarmupRound() && IsClientInGame(client) && !IsPlayerAlive(client) && GetClientTeam(client) > CS_TEAM_SPECTATOR)
+	if(client != 0 && hWarmupRespawn.BoolValue && Restrict_IsWarmupRound() && IsClientInGame(client) && !IsPlayerAlive(client) && GetClientTeam(client) > CS_TEAM_SPECTATOR)
 	{
 		CS_RespawnPlayer(client);
 	}
 }
-StripGroundWeapons()
+
+void StripGroundWeapons()
 {
-	for (new i = MaxClients; i <= GetMaxEntities(); i++)
+	for (int i = MaxClients; i <= GetMaxEntities(); i++)
 	{
 		if (IsValidEdict(i) && IsValidEntity(i))
 		{
-			decl String:name[WEAPONARRAYSIZE];
-			GetEdictClassname(i, name, sizeof(name));
-			if((strncmp(name, "weapon_", 7, false) == 0 || strncmp(name, "item_", 5, false) == 0) && Restrict_GetWeaponIDExtended(name) != WEAPON_NONE && GetEntPropEnt(i, Prop_Data, "m_hOwnerEntity") == -1)
+			char szClassname[WEAPONARRAYSIZE];
+			GetEdictClassname(i, szClassname, sizeof(szClassname));
+			
+			if((strncmp(szClassname, "weapon_", 7, false) == 0 || strncmp(szClassname, "item_", 5, false) == 0) && GetEntPropEnt(i, Prop_Data, "m_hOwnerEntity") == -1 && Restrict_GetWeaponIDExtended(szClassname) != CSWeapon_NONE)
 				AcceptEntityInput(i, "Kill");
 		}
 	}

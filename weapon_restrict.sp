@@ -2,6 +2,8 @@
 #include <sdktools>
 #include <sdkhooks>
 #include <cstrike>
+
+#pragma newdecls required;
 #include <cstrike_weapons>
 #include <restrict>
 #pragma semicolon 1
@@ -16,29 +18,21 @@
 #include <adminmenu>
 #endif
 
-#define PLUGIN_VERSION "3.1.7"
+#define PLUGIN_VERSION "4.0.0"
 #define ADMINCOMMANDTAG "\x01[\x04SM\x01]\x04 "
-#define MAXALIASES 8
 #define MAXWEAPONGROUPS 7
-enum GameType
-{
-	GAME_CSS,
-	GAME_CSGO
-};
-/*new const String:g_WeaponAliasNames[][WEAPONARRAYSIZE] = {"flash", "sgren", "hegren", "assaultsuit", "kevlar", "mp5", "magnum", "nightvision"};
-new const String:g_WeaponAliasReplace[][WEAPONARRAYSIZE] = {"flashbang", "smokegrenade", "hegrenade", "vesthelm", "vest", "mp5navy", "awp", "nvgs"};*/
-new GameType:g_iGame;
-new g_iMyWeaponsMax = 31;
-new const String:g_WeaponGroupNames[][WEAPONARRAYSIZE] = {"pistols", "smgs", "shotguns", "rifles", "snipers", "grenades", "armor"};
 
-new bool:g_bRestrictSound = false;
-new String:g_sCachedSound[PLATFORM_MAX_PATH];
-new bool:g_bLateLoaded = false;
+EngineVersion g_iEngineVersion;
+char g_WeaponGroupNames[][] = {"pistols", "smgs", "shotguns", "rifles", "snipers", "grenades", "armor"};
 
-new RoundType:g_nextRoundSpecial = RoundType_None;
-new RoundType:g_currentRoundSpecial = RoundType_None;
+bool g_bRestrictSound = false;
+char g_sCachedSound[PLATFORM_MAX_PATH];
+bool g_bLateLoaded = false;
+
+RoundType g_nextRoundSpecial = RoundType_None;
+RoundType g_currentRoundSpecial = RoundType_None;
 #if defined STOCKMENU
-new Handle:hAdminMenu = INVALID_HANDLE;
+TopMenu hAdminMenu = null;
 #endif
 
 #include "restrictinc/cvars.sp"
@@ -65,37 +59,32 @@ new Handle:hAdminMenu = INVALID_HANDLE;
 #include "restrictinc/events.sp"
 #include "restrictinc/admincmds.sp"
 
-public Plugin:myinfo = 
+public Plugin myinfo = 
 {
 	name = "Weapon Restrict",
 	author = "Dr!fter",
-	description = "Weapon restrict",
+	description = "CS:S & CS:GO Weapon restrict",
 	version = PLUGIN_VERSION,
-	url = "www.spawnpoint.com"
+	url = "https://forums.alliedmods.net"
 }
-public APLRes:AskPluginLoad2(Handle:myself, bool:late, String:error[], err_max)
+
+public APLRes AskPluginLoad2(Handle myself, bool late, char [] error, int err_max)
 {
-	decl String:gamedir[PLATFORM_MAX_PATH];
-	GetGameFolderName(gamedir, sizeof(gamedir));
-	if(strcmp(gamedir, "cstrike") != 0 && strcmp(gamedir, "csgo") != 0)
+	g_iEngineVersion = GetEngineVersion();
+	
+	if(g_iEngineVersion != Engine_CSGO && g_iEngineVersion != Engine_CSS)
 	{
 		strcopy(error, err_max, "This plugin is only supported on CS");
 		return APLRes_Failure;
 	}
-	if(strcmp(gamedir, "cstrike") == 0)
-	{
-		g_iGame = GAME_CSS;
-	}
-	else
-	{
-		g_iMyWeaponsMax = 63;
-		g_iGame = GAME_CSGO;
-	}
+
 	g_bLateLoaded = late;
 	RegisterNatives();
+	
 	return APLRes_Success;
 }
-public OnPluginStart()
+
+public void OnPluginStart()
 {	
 	HookEvents();
 	RegisterAdminCommands();
@@ -109,10 +98,10 @@ public OnPluginStart()
 	//For late load 
 	if(LibraryExists("adminmenu"))
 	{
-		new Handle:topmenu;
+		TopMenu topmenu;
 		topmenu = GetAdminTopMenu();
 		
-		if(topmenu != INVALID_HANDLE)
+		if(topmenu != null)
 		OnAdminMenuReady(topmenu);
     }
 	#endif
@@ -120,14 +109,15 @@ public OnPluginStart()
 	LoadTranslations("common.phrases");
 	LoadTranslations("WeaponRestrict.phrases");
 	
-	CreateConVars();
 	CreateTimer(0.1, LateLoadExec, _, TIMER_FLAG_NO_MAPCHANGE);
 }
-public Action:LateLoadExec(Handle:timer)
+
+public Action LateLoadExec(Handle timer)
 {
-	new String:file[] = "cfg/sourcemod/weapon_restrict.cfg";
-	if(FileExists(file))
-	{
-		ServerCommand("exec sourcemod/weapon_restrict.cfg");
-	}
+    char szFile[] = "cfg/sourcemod/weapon_restrict.cfg";
+	
+    if(FileExists(szFile))
+    {
+        ServerCommand("exec sourcemod/weapon_restrict.cfg");
+    }
 }
