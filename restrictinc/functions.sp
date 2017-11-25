@@ -118,6 +118,11 @@ stock void RemoveForSpecialRound(int client)
 					
 					Restrict_RemoveWeaponDrop(client, index);
 				}
+				else if(id != CSWeapon_NONE && CSWeapons_GetWeaponType(id) == WeaponTypeTaser)
+				{
+					Restrict_RefundMoney(client, id);
+					Restrict_RemoveWeaponDrop(client, index);
+				}
 			}
 		}
 	}
