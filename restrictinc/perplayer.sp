@@ -74,7 +74,7 @@ public Action Perplayer_Debug(int argc)
 {
 	int last;
 	int lastval;
-	for(int i = 0; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
+	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
 	{
 		if(g_iPerPlayer[i][0] == InvalidWeapon || g_iPerPlayer[i][0] == UninitializedWeapon)
 			continue;
@@ -140,6 +140,7 @@ public SMCResult Perplayer_KeyValue(Handle parser, const char [] key, const char
 		}
 		else
 		{
+			LogError("Missing default section for weapon id %i in perplayer.txt", g_iCurrentID);
 			return SMCParse_HaltFail;
 		}
 	}
@@ -154,8 +155,11 @@ public SMCResult Perplayer_KeyValue(Handle parser, const char [] key, const char
 		{
 			g_iPerPlayer[g_iCurrentID][i] = g_iLastVal;
 		}
-		g_iLastVal = index;
-		g_iLastVal = StringToInt(value);
+		g_iLastIndex = index;
+		
+		int val = StringToInt(value);
+		g_iLastVal = val > MaxClients ? -1 : val;
+		
 		if(g_iLastVal < -1)
 			g_iLastVal = -1;
 	}
