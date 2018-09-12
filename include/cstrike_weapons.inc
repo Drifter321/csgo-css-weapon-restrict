@@ -44,24 +44,25 @@ enum WeaponSlot
 
 static char cstrike_szClassnames[][] =
 {
-	"weapon_p228",				"weapon_glock",				"weapon_scout",				"weapon_hegrenade",
-	"weapon_xm1014",			"weapon_c4",				"weapon_mac10",				"weapon_aug",		
-	"weapon_smokegrenade",		"weapon_elite",				"weapon_fiveseven",			"weapon_ump45",
-	"weapon_sg550",				"weapon_galil",				"weapon_famas",				"weapon_usp",
-	"weapon_awp",				"weapon_mp5navy",			"weapon_m249",				"weapon_m3",
-	"weapon_m4a1",				"weapon_tmp",				"weapon_g3sg1",				"weapon_flashbang",
-	"weapon_deagle",			"weapon_sg552",				"weapon_ak47",				"weapon_knife",
-	"weapon_p90",				"item_kevlar",				"item_assaultsuit",			"weapon_galilar",
-	"weapon_bizon",				"weapon_mag7",				"weapon_negev",				"weapon_sawedoff",
-	"weapon_tec9",				"weapon_taser",				"weapon_hkp2000",			"weapon_mp7",
-	"weapon_mp9",				"weapon_nova",				"weapon_p250",				"weapon_scar20",
-	"weapon_sg556",				"weapon_ssg08",				"weapon_knifegg",			"weapon_molotov",
-	"weapon_decoy",				"weapon_incgrenade",		"item_defuser",				"item_heavyassaultsuit",
-	"item_cutters",				"weapon_healthshot",		"weapon_knife_t",			"weapon_m4a1_silencer",
-	"weapon_usp_silencer",		"weapon_cz75a",				"weapon_revolver",			"weapon_tagrenade",
-	"weapon_bayonet",			"weapon_knife_flip",		"weapon_knife_gut",			"weapon_knife_karambit",
-	"weapon_knife_m9_bayonet",	"weapon_knife_tactical",	"weapon_knife_falchion",	"weapon_knife_survival_bowie",
-	"weapon_knife_butterfly",	"weapon_knife_push",		"item_nvg"
+	"weapon_p228",					"weapon_glock",				"weapon_scout",				"weapon_hegrenade",
+	"weapon_xm1014",				"weapon_c4",				"weapon_mac10",				"weapon_aug",		
+	"weapon_smokegrenade",			"weapon_elite",				"weapon_fiveseven",			"weapon_ump45",
+	"weapon_sg550",					"weapon_galil",				"weapon_famas",				"weapon_usp",
+	"weapon_awp",					"weapon_mp5navy",			"weapon_m249",				"weapon_m3",
+	"weapon_m4a1",					"weapon_tmp",				"weapon_g3sg1",				"weapon_flashbang",
+	"weapon_deagle",				"weapon_sg552",				"weapon_ak47",				"weapon_knife",
+	"weapon_p90",					"item_kevlar",				"item_assaultsuit",			"weapon_galilar",
+	"weapon_bizon",					"weapon_mag7",				"weapon_negev",				"weapon_sawedoff",
+	"weapon_tec9",					"weapon_taser",				"weapon_hkp2000",			"weapon_mp7",
+	"weapon_mp9",					"weapon_nova",				"weapon_p250",				"weapon_scar20",
+	"weapon_sg556",					"weapon_ssg08",				"weapon_knifegg",			"weapon_molotov",
+	"weapon_decoy",					"weapon_incgrenade",		"item_defuser",				"item_heavyassaultsuit",
+	"item_cutters",					"weapon_healthshot",		"weapon_knife_t",			"weapon_m4a1_silencer",
+	"weapon_usp_silencer",			"weapon_cz75a",				"weapon_revolver",			"weapon_tagrenade",
+	"weapon_bayonet",				"weapon_knife_flip",		"weapon_knife_gut",			"weapon_knife_karambit",
+	"weapon_knife_m9_bayonet",		"weapon_knife_tactical",	"weapon_knife_falchion",	"weapon_knife_survival_bowie",
+	"weapon_knife_butterfly",		"weapon_knife_push",		"item_nvg", 				"weapon_knife_ursus",
+	"weapon_knife_gypsy_jackknife", "weapon_knife_stiletto",	"weapon_knife_widowmaker",
 };
 
 static const WeaponType cstrike_iWeaponTypes[] =
@@ -167,7 +168,17 @@ static stock void InitWeaponInfoTrie()
 	
 	for(int i = 0; i < sizeof(cstrike_szClassnames); i++)
 	{
-		CSWeaponID weaponID = AliastToID(cstrike_szClassnames[i]);
+		EngineVersion eng = GetEngineVersion();
+		CSWeaponID weaponID = CSWeapon_NONE;
+		
+		if(eng == Engine_CSGO && StrEqual("weapon_mp5navy", cstrike_szClassnames[i]))
+		{
+			weaponID = CS_AliasToWeaponID("weapon_mp5sd");
+		}
+		else
+		{
+			weaponID = CS_AliasToWeaponID(cstrike_szClassnames[i]);
+		}
 		
 		if(weaponID == CSWeapon_NONE)
 			continue;
@@ -177,7 +188,7 @@ static stock void InitWeaponInfoTrie()
 		info[TrieWeapon_WeaponType] = view_as<int>(cstrike_iWeaponTypes[i]);
 		info[TrieWeapon_ArryIdx] = i;
 		
-		if(GetEngineVersion() == Engine_CSGO && weaponID == CSWeapon_ELITE)
+		if(eng == Engine_CSGO && weaponID == CSWeapon_ELITE)
 		{
 			info[TrieWeapon_BuyTeam] = view_as<int>(BOTH_TEAMS);
 		}
@@ -240,6 +251,12 @@ stock WeaponSlot CSWeapons_GetWeaponSlot(CSWeaponID weaponID)
 
 stock bool CSWeapons_GetWeaponClassname(CSWeaponID weaponID, char [] buffer, int size)
 {
+	if(GetEngineVersion() == Engine_CSGO && weaponID == CSWeapon_MP5NAVY)
+	{
+		strcopy(buffer, size, "weapon_mp5sd");
+		return true;
+	}
+	
 	int info[TrieWeapon_Max];
 	
 	if(GetWeaponInfoFromID(weaponID, info))
