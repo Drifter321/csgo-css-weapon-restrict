@@ -236,6 +236,10 @@
 	{
 		"en"		"Tactical Awareness Grenade"
 	}
+	"mp5sd"
+	{
+		"en"		"MP5"
+	}
 	"pistols"
 	{
 		"en"		"Pistols"

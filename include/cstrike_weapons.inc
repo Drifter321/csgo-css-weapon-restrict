@@ -84,7 +84,8 @@ static const WeaponType cstrike_iWeaponTypes[] =
 	WeaponTypePistol,			WeaponTypePistol,			WeaponTypePistol,			WeaponTypeGrenade,
 	WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,
 	WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,
-	WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeOther
+	WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeOther,			WeaponTypeKnife,
+	WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,
 };
 
 static const WeaponSlot cstrike_iWeaponSlots[] =
@@ -106,7 +107,8 @@ static const WeaponSlot cstrike_iWeaponSlots[] =
 	SlotPistol,					SlotPistol,					SlotPistol,					SlotGrenade,
 	SlotKnife,					SlotKnife,					SlotKnife,					SlotKnife,
 	SlotKnife,					SlotKnife,					SlotKnife,					SlotKnife,
-	SlotKnife,					SlotKnife,					SlotNone
+	SlotKnife,					SlotKnife,					SlotNone,					SlotKnife,
+	SlotKnife,					SlotKnife,					SlotKnife,
 };
 
 static const int cstrike_iBuyTeams[] =
@@ -128,7 +130,8 @@ static const int cstrike_iBuyTeams[] =
 	CT_TEAM,					BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,
 	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,
 	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,
-	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS
+	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,
+	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,
 };
 
 enum TrieWeaponInfo
