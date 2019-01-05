@@ -8,19 +8,8 @@ static Handle hWarmupEndForward = null;
 static bool g_bOverrideValues[CSWeapon_MAX_WEAPONS_NO_KNIFES][CVarTeam_MAX];
 #endif
 
-enum
-{
-	Ammo_HEGrenade_Index = 0,
-	Ammo_Flashbang_Index,
-	Ammo_Smokegrenade_Index,
-	Ammo_IncGrenade_Index,
-	Ammo_DecoyGrenade_Index,
-	Ammo_TAGrenade_Index,
-	Ammo_MAXINDEX
-}
-
 //m_iAmmo array index
-static int iGrenadeAmmoIndex[Ammo_MAXINDEX] = {-1, ...};
+static int iGrenadeAmmoIndex[CSWeapon_MAX_WEAPONS_NO_KNIFES] = {-1, ...};
 
 void RegisterNatives()
 {
@@ -68,22 +57,23 @@ void RegisterGrenades()
 	
 	if(!bAmmoChecked)
 	{
-		static char szGrenadeClassnames[][] = {"weapon_hegrenade", "weapon_flashbang", "weapon_smokegrenade", "weapon_incgrenade", "weapon_decoy", "weapon_tagrenade"};
-		
-		int iEnt;
-		
-		for(int i = 0; i < Ammo_MAXINDEX; i++)
+		for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
 		{
-			if(g_iEngineVersion == Engine_CSS && i >= Ammo_IncGrenade_Index)
-				break;
-			
-			iEnt = CreateEntityByName(szGrenadeClassnames[i]);
-			
-			if(iEnt)
+			static char szClassname[128];
+			if(!CSWeapons_IsValidID(view_as<CSWeaponID>(i), true) && CSWeapons_GetWeaponType(view_as<CSWeaponID>(i)) == WeaponTypeGrenade && CSWeapons_GetWeaponClassname(view_as<CSWeaponID>(i), szClassname, sizeof(szClassname)))
 			{
-				DispatchSpawn(iEnt);
-				iGrenadeAmmoIndex[i] = GetEntProp(iEnt, Prop_Send, "m_iPrimaryAmmoType");
-				AcceptEntityInput(iEnt, "Kill");
+				int iEnt = CreateEntityByName(szClassname);
+			
+				if(iEnt)
+				{
+					DispatchSpawn(iEnt);
+					iGrenadeAmmoIndex[i] = GetEntProp(iEnt, Prop_Send, "m_iPrimaryAmmoType");
+					AcceptEntityInput(iEnt, "Kill");
+				}
+			}
+			else
+			{
+				iGrenadeAmmoIndex[i] = -1;
 			}
 		}
 		bAmmoChecked = true;
@@ -235,34 +225,8 @@ public int Native_RemoveRandom(Handle hPlugin, int iNumParams)
 	if(slot == SlotGrenade)
 	{
 		int iAmmoIndex = -1;
-		switch(id)
-		{
-			case CSWeapon_HEGRENADE:
-			{
-				iAmmoIndex = iGrenadeAmmoIndex[Ammo_HEGrenade_Index];
-			}
-			case CSWeapon_FLASHBANG:
-			{
-				iAmmoIndex = iGrenadeAmmoIndex[Ammo_Flashbang_Index];
-			}
-			case CSWeapon_SMOKEGRENADE:
-			{
-				iAmmoIndex = iGrenadeAmmoIndex[Ammo_Smokegrenade_Index];
-			}
-			case CSWeapon_INCGRENADE, CSWeapon_MOLOTOV:
-			{
-				iAmmoIndex = iGrenadeAmmoIndex[Ammo_IncGrenade_Index];
-			}
-			case CSWeapon_DECOY:
-			{
-				iAmmoIndex = iGrenadeAmmoIndex[Ammo_DecoyGrenade_Index];
-			}
-			case CSWeapon_TAGGRENADE:
-			{
-				iAmmoIndex = iGrenadeAmmoIndex[Ammo_TAGrenade_Index];
-			}
-		}
-		
+		iAmmoIndex = iGrenadeAmmoIndex[id];
+
 		if(iAmmoIndex == -1)
 			return ThrowNativeError(SP_ERROR_NATIVE, "Failed to get m_iAmmo index for %d", id);
 		
@@ -457,36 +421,13 @@ public int Native_GetClientGrenadeCount(Handle hPlugin, int iNumParams)
 	
 	int iAmmoIndex = -1;
 	
-	switch(id)
+	if(CSWeapons_GetWeaponType(id) == WeaponTypeGrenade)
 	{
-		case CSWeapon_HEGRENADE:
-		{
-			iAmmoIndex = iGrenadeAmmoIndex[Ammo_HEGrenade_Index];
-		}
-		case CSWeapon_FLASHBANG:
-		{
-			iAmmoIndex = iGrenadeAmmoIndex[Ammo_Flashbang_Index];
-		}
-		case CSWeapon_SMOKEGRENADE:
-		{
-			iAmmoIndex = iGrenadeAmmoIndex[Ammo_Smokegrenade_Index];
-		}
-		case CSWeapon_INCGRENADE, CSWeapon_MOLOTOV:
-		{
-			iAmmoIndex = iGrenadeAmmoIndex[Ammo_IncGrenade_Index];
-		}
-		case CSWeapon_DECOY:
-		{
-			iAmmoIndex = iGrenadeAmmoIndex[Ammo_DecoyGrenade_Index];
-		}
-		case CSWeapon_TAGGRENADE:
-		{
-			iAmmoIndex = iGrenadeAmmoIndex[Ammo_TAGrenade_Index];
-		}
-		default:
-		{
-			return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is not a grenade.", id);
-		}
+		iAmmoIndex = iGrenadeAmmoIndex[id];
+	}
+	else
+	{
+		return ThrowNativeError(SP_ERROR_NATIVE, "Weapon id %d is not a grenade.", id);
 	}
 	
 	if(iAmmoIndex == -1)

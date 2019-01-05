@@ -65,7 +65,7 @@ static char cstrike_szClassnames[][] =
 	"weapon_knife_gypsy_jackknife", "weapon_knife_stiletto",	"weapon_knife_widowmaker",	"weapon_fists",
 	"weapon_breachcharge",			"weapon_tablet",			"weapon_melee",				"weapon_axe",
 	"weapon_hammer",				"weapon_spanner",			"weapon_knife_ghost",		"weapon_firebomb",
-	"weapon_diversion",				"weapon_frag_grenade",
+	"weapon_diversion",				"weapon_frag_grenade",		"weapon_snowball",
 };
 
 static const WeaponType cstrike_iWeaponTypes[] =
@@ -91,7 +91,7 @@ static const WeaponType cstrike_iWeaponTypes[] =
 	WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,
 	WeaponTypeKnife,			WeaponTypeOther,			WeaponTypeKnife,			WeaponTypeKnife,
 	WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeGrenade,
-	WeaponTypeGrenade,			WeaponTypeGrenade,
+	WeaponTypeGrenade,			WeaponTypeGrenade,			WeaponTypeGrenade,
 };
 
 static const WeaponSlot cstrike_iWeaponSlots[] =
@@ -117,7 +117,7 @@ static const WeaponSlot cstrike_iWeaponSlots[] =
 	SlotKnife,					SlotKnife,					SlotKnife,					SlotKnife,
 	SlotKnife,					SlotNone,					SlotKnife,					SlotKnife,
 	SlotKnife,					SlotKnife,					SlotKnife,					SlotGrenade,
-	SlotGrenade,				SlotGrenade,
+	SlotGrenade,				SlotGrenade,				SlotGrenade,
 };
 
 static const int cstrike_iBuyTeams[] =
@@ -143,7 +143,7 @@ static const int cstrike_iBuyTeams[] =
 	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,
 	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,
 	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,
-	BOTH_TEAMS,					BOTH_TEAMS,	
+	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,
 };
 
 enum TrieWeaponInfo

@@ -240,6 +240,54 @@
 	{
 		"en"		"MP5"
 	}
+	"nvg"
+	{
+		"en"		"Nightvision Goggles"
+	}
+	"fists"
+	{
+		"en"		"Fists"
+	}
+	"breachcharge"
+	{
+		"en"		"Breachcharge"
+	}
+	"tablet"
+	{
+		"en"		"Tablet"
+	}
+	"melee"
+	{
+		"en"		"Melee"
+	}
+	"axe"
+	{
+		"en"		"Axe"
+	}
+	"hammer"
+	{
+		"en"		"Hammer"
+	}
+	"spanner"
+	{
+		"en"		"Spanner"
+	}
+	"firebomb"
+	{
+		"en"		"Firebomb"
+	}
+	"diversion"
+	{
+		"en"		"Diversion Grenade"
+	}
+	"frag_grenade"
+	{
+		"en"		"Frag Grenade"
+	}
+	"snowball"
+	{
+		"en"		"Snowball"
+	}
 	"pistols"
 	{
 		"en"		"Pistols"
