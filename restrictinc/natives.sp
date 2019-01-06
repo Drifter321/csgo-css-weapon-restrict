@@ -60,7 +60,7 @@ void RegisterGrenades()
 		for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
 		{
 			static char szClassname[128];
-			if(!CSWeapons_IsValidID(view_as<CSWeaponID>(i), true) && CSWeapons_GetWeaponType(view_as<CSWeaponID>(i)) == WeaponTypeGrenade && CSWeapons_GetWeaponClassname(view_as<CSWeaponID>(i), szClassname, sizeof(szClassname)))
+			if(CSWeapons_IsValidID(view_as<CSWeaponID>(i), true) && CSWeapons_GetWeaponType(view_as<CSWeaponID>(i)) == WeaponTypeGrenade && CSWeapons_GetWeaponClassname(view_as<CSWeaponID>(i), szClassname, sizeof(szClassname)))
 			{
 				int iEnt = CreateEntityByName(szClassname);
 			
