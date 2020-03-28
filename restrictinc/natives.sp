@@ -9,7 +9,7 @@ static bool g_bOverrideValues[CSWeapon_MAX_WEAPONS_NO_KNIFES][CVarTeam_MAX];
 #endif
 
 //m_iAmmo array index
-static int iGrenadeAmmoIndex[CSWeapon_MAX_WEAPONS_NO_KNIFES] = {-1, ...};
+static int iGrenadeAmmoIndex[view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES)] = {-1, ...};
 
 void RegisterNatives()
 {
@@ -337,6 +337,9 @@ public int Native_GetRestrictValue(Handle hPlugin, int iNumParams)
 {
 	int iTeam = GetNativeCell(1);
 	CSWeaponID id = GetNativeCell(2);
+	
+	if(id >= CSWeapon_MAX_WEAPONS_NO_KNIFES)
+		return -1;
 	
 	if(!IsValidTeam(iTeam))
 	{
@@ -695,6 +698,9 @@ public int Native_SetRestriction(Handle hPlugin, int iNumParams)
 	int iTeam = GetNativeCell(2);
 	int iAmount = GetNativeCell(3);
 	
+	if(id >= CSWeapon_MAX_WEAPONS_NO_KNIFES)
+		return true;
+	
 	#if defined PERPLAYER //avoid warnings this is only needed if perplayer is compiled in.
 	bool bOverride = GetNativeCell(4);
 	#endif
@@ -878,7 +884,7 @@ public int Native_PlayRestrictSound(Handle hPlugin, int iNumParams)
 	Call_Finish(res);
 	if(res == Plugin_Continue && g_bRestrictSound)
 		EmitSoundToClient(client, g_sCachedSound);
-	if(res == Plugin_Changed && IsSoundPrecached(szForwardFile))
+	if(res == Plugin_Changed)
 		EmitSoundToClient(client, szForwardFile);
 	
 	return 1;
