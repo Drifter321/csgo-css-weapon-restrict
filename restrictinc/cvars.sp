@@ -70,7 +70,7 @@ void CreateConVars()
 			Format(desc, sizeof(desc), "-1 = unrestricted, 0 = restricted, positive numbers = number allowed for Counter-Terrorists. Weapon:%s", szName);
 			hRestrictCVars[i][CVarTeam_CT] = CreateConVar(cvar, "-1", desc);
 		}
-	
+
 		hAllowPickup		= CreateConVar("sm_allow_restricted_pickup", "0", "Set to 0 to ONLY allow pickup if under the max allowed. Set to 1 to allow restricted weapon pickup");
 		hAWPAllowPickup		= CreateConVar("sm_allow_awp_pickup", "1", "Set to 0 to allow awp pickup ONLY if it is under the max allowed. Set to 1 to use sm_allow_restricted_pickup method.");
 		hAdminImmunity 		= CreateConVar("sm_weapon_restrict_immunity", "0", "Enables admin immunity so admins can buy restricted weapons");
@@ -103,7 +103,7 @@ void CreateConVars()
 		#if defined PERPLAYER
 		hPerPlayerRestrict	= CreateConVar("sm_perplayer_restrict", "0", "If enabled will restrict awp per player count");
 		hPerPlayerBots	 	= CreateConVar("sm_perplayer_bots", "1", "If enabled will count bots in per player restricts");
-		hPerPlayerSpecs	  	= CreateConVar("sm_perplayer_specs", "1", "If enabled will count specs in per player restricts");
+		hPerPlayerSpecs		= CreateConVar("sm_perplayer_specs", "1", "If enabled will count specs in per player restricts");
 		
 		RegServerCmd("sm_perplayer_debug", Perplayer_Debug, "Command used to debug per player stuff");
 		

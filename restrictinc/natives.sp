@@ -773,7 +773,7 @@ public int Native_CheckPlayerWeapons(Handle hPlugin, int iNumParams)
 	int iCount;
 	
 	for(int i = 1; i < view_as<int>(CSWeapon_MAX_WEAPONS_NO_KNIFES); i++)
-    {
+	{
 		CSWeaponID id = view_as<CSWeaponID>(i);
 		
 		if(!CSWeapons_IsValidID(id, true))
@@ -792,6 +792,8 @@ public int Native_CheckPlayerWeapons(Handle hPlugin, int iNumParams)
 				Restrict_RemoveRandom(iCount-iVal, iTeam, id);
 		}
 	}
+
+	return 0;
 }
 
 public int Native_RemoveWeaponDrop(Handle hPlugin, int iNumParams)

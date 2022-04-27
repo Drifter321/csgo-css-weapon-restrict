@@ -106,6 +106,8 @@ public Action OnWeaponCanUse(int client, int weapon)
 public Action ResetPrintDelay(Handle timer, int client)
 {
 	g_bSpamProtectPrint[client] = false;
+
+	return Plugin_Continue;
 }
 
 public void OnMapStart()
@@ -170,6 +172,8 @@ public Action DelayExec(Handle timer)
 	#endif
 	
 	g_bLateLoaded = false;
+
+	return Plugin_Continue;
 }
 
 public Action EventRoundStart(Handle event, const char [] name, bool dontBroadcast)
