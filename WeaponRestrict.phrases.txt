@@ -120,6 +120,10 @@
 	{
 		"en"		"Knife"
 	}
+	"shield"
+	{
+		"en"		"Shield"
+	}
 	"kevlar"
 	{
 		"en"		"Kevlar"
@@ -287,6 +291,10 @@
 	"snowball"
 	{
 		"en"		"Snowball"
+	}
+	"bumpmine"
+	{
+		"en"		"Bumpmine"
 	}
 	"pistols"
 	{

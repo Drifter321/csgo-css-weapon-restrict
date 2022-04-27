@@ -83,18 +83,28 @@ public Action OnWeaponCanUse(int client, int weapon)
 	{
 		char szWeaponName[WEAPONARRAYSIZE];
 		CSWeapons_GetAlias(id, szWeaponName, sizeof(szWeaponName), true);
-		
+		bool bWeaponTranslation = TranslationPhraseExists(szWeaponName);
+
 		if(Restrict_IsSpecialRound() && !Restrict_AllowedForSpecialRound(id))
 		{
-			PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", szWeaponName, client, "SpecialNotAllowed", client);
+			if(bWeaponTranslation)
+				PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", szWeaponName, client, "SpecialNotAllowed", client);
+			else
+				PrintToChat(client, "\x01[\x04SM\x01]\x04 %s %T", szWeaponName, client, "SpecialNotAllowed", client);
 		}
 		else if(iTeam == CS_TEAM_CT)
 		{
-			PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", szWeaponName, client, "IsRestrictedPickupCT", client, Restrict_GetRestrictValue(iTeam, id));
+			if(bWeaponTranslation)
+				PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", szWeaponName, client, "IsRestrictedPickupCT", client, Restrict_GetRestrictValue(iTeam, id));
+			else
+				PrintToChat(client, "\x01[\x04SM\x01]\x04 %s %T", szWeaponName, client, "IsRestrictedPickupCT", client, Restrict_GetRestrictValue(iTeam, id));
 		}
 		else
 		{
-			PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", szWeaponName, client, "IsRestrictedPickupT", client, Restrict_GetRestrictValue(iTeam, id));
+			if(bWeaponTranslation)
+				PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", szWeaponName, client, "IsRestrictedPickupT", client, Restrict_GetRestrictValue(iTeam, id));
+			else
+				PrintToChat(client, "\x01[\x04SM\x01]\x04 %s %T", szWeaponName, client, "IsRestrictedPickupT", client, Restrict_GetRestrictValue(iTeam, id));
 		}
 		
 		g_bSpamProtectPrint[client] = true;
@@ -246,19 +256,41 @@ public Action CS_OnBuyCommand(int client, const char [] szWeapon)
 		char szWeaponName[WEAPONARRAYSIZE];
 		CSWeapons_GetAlias(id, szWeaponName, sizeof(szWeaponName), true);
 		
-		if(iTeam == CS_TEAM_CT && result != CanBuy_BlockDontDisplay)
+		bool bWeaponTranslation = TranslationPhraseExists(szWeaponName);
+
+		if(bWeaponTranslation)
 		{
-			if(Restrict_IsSpecialRound() && !Restrict_AllowedForSpecialRound(id))
-				PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", szWeaponName, client, "SpecialNotAllowed", client);
-			else
-				PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", szWeaponName, client, "IsRestrictedBuyCT", client, Restrict_GetRestrictValue(iTeam, id));
+			if(iTeam == CS_TEAM_CT && result != CanBuy_BlockDontDisplay)
+			{
+				if(Restrict_IsSpecialRound() && !Restrict_AllowedForSpecialRound(id))
+					PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", szWeaponName, client, "SpecialNotAllowed", client);
+				else
+					PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", szWeaponName, client, "IsRestrictedBuyCT", client, Restrict_GetRestrictValue(iTeam, id));
+			}
+			else if(iTeam == CS_TEAM_T && result != CanBuy_BlockDontDisplay)
+			{	if(Restrict_IsSpecialRound() && !Restrict_AllowedForSpecialRound(id))
+					PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", szWeaponName, client, "SpecialNotAllowed", client);
+				else
+					PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", szWeaponName, client, "IsRestrictedBuyT", client, Restrict_GetRestrictValue(iTeam, id));
+			}
 		}
-		else if(iTeam == CS_TEAM_T && result != CanBuy_BlockDontDisplay)
-		{	if(Restrict_IsSpecialRound() && !Restrict_AllowedForSpecialRound(id))
-				PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", szWeaponName, client, "SpecialNotAllowed", client);
-			else
-				PrintToChat(client, "\x01[\x04SM\x01]\x04 %T %T", szWeaponName, client, "IsRestrictedBuyT", client, Restrict_GetRestrictValue(iTeam, id));
+		else
+		{
+			if(iTeam == CS_TEAM_CT && result != CanBuy_BlockDontDisplay)
+			{
+				if(Restrict_IsSpecialRound() && !Restrict_AllowedForSpecialRound(id))
+					PrintToChat(client, "\x01[\x04SM\x01]\x04 %s %T", szWeaponName, client, "SpecialNotAllowed", client);
+				else
+					PrintToChat(client, "\x01[\x04SM\x01]\x04 %s %T", szWeaponName, client, "IsRestrictedBuyCT", client, Restrict_GetRestrictValue(iTeam, id));
+			}
+			else if(iTeam == CS_TEAM_T && result != CanBuy_BlockDontDisplay)
+			{	if(Restrict_IsSpecialRound() && !Restrict_AllowedForSpecialRound(id))
+					PrintToChat(client, "\x01[\x04SM\x01]\x04 %s %T", szWeaponName, client, "SpecialNotAllowed", client);
+				else
+					PrintToChat(client, "\x01[\x04SM\x01]\x04 %s %T", szWeaponName, client, "IsRestrictedBuyT", client, Restrict_GetRestrictValue(iTeam, id));
+			}
 		}
+		
 		Restrict_PlayRestrictSound(client, id);
 		return Plugin_Handled;
 	}
