@@ -147,8 +147,6 @@ public int Handle_TypeMenu(Menu menu, MenuAction action, int param1, int param2)
 			DisplayRestrictMenu(param1);
 		}
 	}
-
-	return 0;
 }
 
 void DisplayRestrictMenu(int client)
@@ -207,8 +205,6 @@ public int Handle_WeaponMenu(Menu menu, MenuAction action, int param1, int param
 			}
 		}
 	}
-
-	return 0;
 }
 
 void DisplayAmountMenu(int client)
@@ -288,8 +284,6 @@ public int Handle_TeamMenu(Menu menu, MenuAction action, int param1, int param2)
 				HandleMenuGroupRestriction(param1, g_iGroupSelected[param1], g_iMenuAmount[param1], team);
 		}
 	}
-
-	return 0;
 }
 
 public int Handle_AmountMenu(Menu menu, MenuAction action, int param1, int param2)
@@ -311,8 +305,6 @@ public int Handle_AmountMenu(Menu menu, MenuAction action, int param1, int param
 			DisplayTeamMenu(param1);
 		}
 	}
-
-	return 0;
 }
 
 stock void HandleMenuRestriction(int client, CSWeaponID id, int amount, int team)

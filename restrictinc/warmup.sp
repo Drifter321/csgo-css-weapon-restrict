@@ -176,9 +176,7 @@ public Action ResetFF(Handle timer)
 	g_currentRoundSpecial = g_nextRoundSpecial;
 	g_nextRoundSpecial = RoundType_None;
 	
-	hFriendlyFire.SetInt(iFriendlyFire, true, false);
-
-	return Plugin_Continue;
+	hFriendlyFire.SetInt(iFriendlyFire, true, false);	
 }
 
 void GiveWarmupWeapon(int client)
@@ -204,8 +202,6 @@ public Action OnPlayerSpawn(Event event, const char [] name, bool dontBroadcast)
 	{
 		GiveWarmupWeapon(client);
 	}
-
-	return Plugin_Continue;
 }
 
 public Action OnPlayerDeath(Event event, const char [] name, bool dontBroadcast)
@@ -218,8 +214,6 @@ public Action OnPlayerDeath(Event event, const char [] name, bool dontBroadcast)
 		if(RespawnTimer[client] == null)
 			RespawnTimer[client] = CreateTimer(hWarmupRespawnTime.FloatValue, RespawnFunc, userid, TIMER_FLAG_NO_MAPCHANGE);
 	}
-
-	return Plugin_Continue;
 }
 
 public Action OnHegrenadeDetonate(Event event, const char [] name, bool dontBroadcast)
@@ -252,8 +246,6 @@ public Action RespawnFunc(Handle timer, int userid)
 	{
 		CS_RespawnPlayer(client);
 	}
-
-	return Plugin_Continue;
 }
 
 void StripGroundWeapons()

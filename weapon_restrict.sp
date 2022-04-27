@@ -18,7 +18,7 @@
 #include <adminmenu>
 #endif
 
-#define PLUGIN_VERSION "4.2.0"
+#define PLUGIN_VERSION "4.0.0-b7"
 #define ADMINCOMMANDTAG "\x01[\x04SM\x01]\x04 "
 #define MAXWEAPONGROUPS 7
 
@@ -103,7 +103,7 @@ public void OnPluginStart()
 		
 		if(topmenu != null)
 		OnAdminMenuReady(topmenu);
-	}
+    }
 	#endif
 	
 	LoadTranslations("common.phrases");
@@ -114,12 +114,10 @@ public void OnPluginStart()
 
 public Action LateLoadExec(Handle timer)
 {
-	char szFile[] = "cfg/sourcemod/weapon_restrict.cfg";
+    char szFile[] = "cfg/sourcemod/weapon_restrict.cfg";
 	
-	if(FileExists(szFile))
-	{
-		ServerCommand("exec sourcemod/weapon_restrict.cfg");
-	}
-
-	return Plugin_Continue;
+    if(FileExists(szFile))
+    {
+        ServerCommand("exec sourcemod/weapon_restrict.cfg");
+    }
 }

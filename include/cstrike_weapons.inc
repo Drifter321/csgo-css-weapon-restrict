@@ -7,6 +7,7 @@
 #include "adt_trie.inc"
 #include "string.inc"
 #include "cstrike.inc"
+#include "string.inc"
 
 #define CT_TEAM 3
 #define TERROR_TEAM 2
@@ -88,7 +89,7 @@ static const WeaponType cstrike_iWeaponTypes[] =
 	WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,
 	WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeOther,			WeaponTypeKnife,
 	WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,
-	WeaponTypeGrenade,			WeaponTypeOther,			WeaponTypeKnife,			WeaponTypeKnife,
+	WeaponTypeKnife,			WeaponTypeOther,			WeaponTypeKnife,			WeaponTypeKnife,
 	WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeKnife,			WeaponTypeGrenade,
 	WeaponTypeGrenade,			WeaponTypeGrenade,			WeaponTypeGrenade,			WeaponTypeGrenade,
 };
@@ -114,7 +115,7 @@ static const WeaponSlot cstrike_iWeaponSlots[] =
 	SlotKnife,					SlotKnife,					SlotKnife,					SlotKnife,
 	SlotKnife,					SlotKnife,					SlotNone,					SlotKnife,
 	SlotKnife,					SlotKnife,					SlotKnife,					SlotKnife,
-	SlotGrenade,				SlotNone,					SlotKnife,					SlotKnife,
+	SlotKnife,					SlotNone,					SlotKnife,					SlotKnife,
 	SlotKnife,					SlotKnife,					SlotKnife,					SlotGrenade,
 	SlotGrenade,				SlotGrenade,				SlotGrenade,				SlotGrenade,
 };
@@ -127,7 +128,7 @@ static const int cstrike_iBuyTeams[] =
 	CT_TEAM,					TERROR_TEAM,				CT_TEAM,					CT_TEAM,
 	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,
 	CT_TEAM,					CT_TEAM,					TERROR_TEAM,				BOTH_TEAMS,
-	BOTH_TEAMS,					TERROR_TEAM,				TERROR_TEAM,				CT_TEAM,
+	BOTH_TEAMS,					TERROR_TEAM,				TERROR_TEAM,				BOTH_TEAMS,
 	BOTH_TEAMS,					BOTH_TEAMS,					BOTH_TEAMS,					TERROR_TEAM,
 	BOTH_TEAMS,					CT_TEAM,					BOTH_TEAMS,					TERROR_TEAM,
 	TERROR_TEAM,				BOTH_TEAMS,					CT_TEAM,					BOTH_TEAMS,
@@ -150,12 +151,11 @@ enum TrieWeaponInfo
 	TrieWeapon_Slot = 0,
 	TrieWeapon_BuyTeam,
 	TrieWeapon_WeaponType,
+	TrieWeapon_ArryIdx,
 	TrieWeapon_Max
 };
 
 static StringMap hWeaponIDToInfoTrie = null;
-static StringMap hWeaponIDToClassname = null;
-static StringMap hWeaponSlotMap = null;
 static EngineVersion iEngineVersion;
 
 stock void CSWeapons_Init()
@@ -178,17 +178,15 @@ static stock CSWeaponID AliastToID(const char [] szClassname) //Internal use onl
 static stock void InitWeaponInfoTrie()
 {
 	hWeaponIDToInfoTrie = new StringMap();
-	hWeaponIDToClassname = new StringMap();
-
-	CreateSlotMap();
-
+	
 	int info[TrieWeapon_Max];
 	
 	for(int i = 0; i < sizeof(cstrike_szClassnames); i++)
 	{
+		EngineVersion eng = GetEngineVersion();
 		CSWeaponID weaponID = CSWeapon_NONE;
 		
-		if(iEngineVersion == Engine_CSGO && StrEqual("weapon_mp5navy", cstrike_szClassnames[i]))
+		if(eng == Engine_CSGO && StrEqual("weapon_mp5navy", cstrike_szClassnames[i]))
 		{
 			weaponID = CS_AliasToWeaponID("weapon_mp5sd");
 		}
@@ -203,9 +201,9 @@ static stock void InitWeaponInfoTrie()
 		info[TrieWeapon_Slot] = view_as<int>(cstrike_iWeaponSlots[i]);
 		info[TrieWeapon_BuyTeam] = view_as<int>(cstrike_iBuyTeams[i]);
 		info[TrieWeapon_WeaponType] = view_as<int>(cstrike_iWeaponTypes[i]);
-		//info[TrieWeapon_ArryIdx] = i;
+		info[TrieWeapon_ArryIdx] = i;
 		
-		if(iEngineVersion == Engine_CSGO && weaponID == CSWeapon_ELITE)
+		if(eng == Engine_CSGO && weaponID == CSWeapon_ELITE)
 		{
 			info[TrieWeapon_BuyTeam] = view_as<int>(BOTH_TEAMS);
 		}
@@ -214,151 +212,7 @@ static stock void InitWeaponInfoTrie()
 		IntToString(view_as<int>(weaponID), key, sizeof(key));
 		
 		hWeaponIDToInfoTrie.SetArray(key, info[0], view_as<int>(TrieWeapon_Max));
-		hWeaponIDToClassname.SetString(key, cstrike_szClassnames[i]);
 	}
-
-	if(iEngineVersion == Engine_CSGO)
-	{
-		//Parse items_games.txt and add items.
-		KeyValues kvItems = new KeyValues("");
-		KeyValues kvPrefabs = new KeyValues("");
-
-		kvItems.ImportFromFile("scripts/items/items_game.txt");
-		kvPrefabs.ImportFromFile("scripts/items/items_game.txt");
-
-		if(kvItems.JumpToKey("items") && kvPrefabs.JumpToKey("prefabs"))
-		{
-			if(kvItems.GotoFirstSubKey(true))
-			{
-				addWeaponFromItems(kvItems, kvPrefabs);
-
-				while(kvItems.GotoNextKey(true))
-				{
-					addWeaponFromItems(kvItems, kvPrefabs);
-				}
-			}
-		}
-		
-		delete kvItems;
-		delete kvPrefabs
-	}
-}
-
-static stock void addWeaponFromItems(KeyValues kvItems, KeyValues kvPrefabs)
-{
-	char szSectionName[10];
-	
-	if(kvItems.GetSectionName(szSectionName, sizeof(szSectionName)))
-	{
-		int iDefIndex = StringToInt(szSectionName);
-		char szClassname[128];
-		char szPrefab[128];
-
-		if(!iDefIndex || !kvItems.GetString("name", szClassname, sizeof(szClassname)) || (StrContains(szClassname, "weapon_") == -1 && StrContains(szClassname, "item_") == -1) || !kvItems.GetString("prefab", szPrefab, sizeof(szPrefab)))
-			return;
-
-		WeaponType iItemType;
-
-		if(!hWeaponSlotMap.GetValue(szClassname, iItemType))
-		{
-			if(!hWeaponSlotMap.GetValue(szPrefab, iItemType))
-			{
-				char szItemType[128];
-				kvItems.GetString("item_sub_position", szItemType, sizeof(szItemType));
-
-				if(!hWeaponSlotMap.GetValue(szItemType, iItemType))
-					iItemType = WeaponTypeOther;
-			}
-		}
-
-		int iBuyTeam = BOTH_TEAMS;
-
-		if(kvItems.JumpToKey("used_by_classes"))
-		{
-			int iTerroroists = kvItems.GetNum("terrorists", -1)
-			int iCounterTerroroists = kvItems.GetNum("counter-terrorists", -1)
-			iBuyTeam = (iTerroroists == 1 && iCounterTerroroists == 1) ? BOTH_TEAMS : iTerroroists == 1 ? TERROR_TEAM : iCounterTerroroists == 1 ? CT_TEAM : BOTH_TEAMS;
-			kvItems.GoBack();
-		}
-		else if(kvPrefabs.JumpToKey(szPrefab))
-		{
-			if(kvPrefabs.JumpToKey("used_by_classes"))
-			{
-				int iTerroroists = kvPrefabs.GetNum("terrorists", -1)
-				int iCounterTerroroists = kvPrefabs.GetNum("counter-terrorists", -1)
-				iBuyTeam = (iTerroroists == 1 && iCounterTerroroists == 1) ? BOTH_TEAMS : iTerroroists == 1 ? TERROR_TEAM : iCounterTerroroists == 1 ? CT_TEAM : BOTH_TEAMS;
-				kvPrefabs.GoBack();
-			}
-			kvPrefabs.GoBack();
-		}
-
-		WeaponSlot iSlot = StrEqual(szClassname, "weapon_c4") || StrEqual(szClassname, "weapon_healthshot") ? SlotC4 : iItemType == WeaponTypePistol ? SlotPistol : (iItemType == WeaponTypeKnife || iItemType == WeaponTypeTaser) ? SlotKnife : iItemType == WeaponTypeGrenade ? SlotGrenade : (iItemType == WeaponTypeArmor || iItemType == WeaponTypeOther || iItemType == WeaponTypeShield) ? SlotNone : SlotPrimmary;
-
-		int info[TrieWeapon_Max];
-		info[TrieWeapon_Slot] = view_as<int>(iSlot);
-		info[TrieWeapon_BuyTeam] = view_as<int>(iBuyTeam);
-		info[TrieWeapon_WeaponType] = view_as<int>(iItemType);
-
-		CSWeaponID weaponID = CS_AliasToWeaponID(szClassname);
-		if(weaponID)
-		{
-			char key[10];
-			IntToString(view_as<int>(weaponID), key, sizeof(key));
-			hWeaponIDToInfoTrie.SetArray(key, info[0], view_as<int>(TrieWeapon_Max));
-			hWeaponIDToClassname.SetString(key, szClassname);
-		}
-	}
-}
-
-static stock void CreateSlotMap()
-{
-	hWeaponSlotMap = new StringMap();
-	hWeaponSlotMap.SetValue("grenade0", WeaponTypeGrenade);
-	hWeaponSlotMap.SetValue("grenade1", WeaponTypeGrenade);
-	hWeaponSlotMap.SetValue("grenade2", WeaponTypeGrenade);
-	hWeaponSlotMap.SetValue("grenade3", WeaponTypeGrenade);
-	hWeaponSlotMap.SetValue("grenade4", WeaponTypeGrenade);
-	hWeaponSlotMap.SetValue("smg0", WeaponTypeSMG);
-	hWeaponSlotMap.SetValue("smg1", WeaponTypeSMG);
-	hWeaponSlotMap.SetValue("smg2", WeaponTypeSMG);
-	hWeaponSlotMap.SetValue("smg3", WeaponTypeSMG);
-	hWeaponSlotMap.SetValue("smg4", WeaponTypeSMG);
-	hWeaponSlotMap.SetValue("heavy0", WeaponTypeShotgun);
-	hWeaponSlotMap.SetValue("heavy1", WeaponTypeShotgun);
-	hWeaponSlotMap.SetValue("heavy2", WeaponTypeShotgun);
-	hWeaponSlotMap.SetValue("heavy3", WeaponTypeMachineGun);
-	hWeaponSlotMap.SetValue("heavy4", WeaponTypeMachineGun);
-	hWeaponSlotMap.SetValue("rifle0", WeaponTypeRifle);
-	hWeaponSlotMap.SetValue("rifle1", WeaponTypeRifle);
-	hWeaponSlotMap.SetValue("rifle2", WeaponTypeSniper);
-	hWeaponSlotMap.SetValue("rifle3", WeaponTypeRifle);
-	hWeaponSlotMap.SetValue("rifle4", WeaponTypeSniper);
-	hWeaponSlotMap.SetValue("rifle5", WeaponTypeSniper);
-	hWeaponSlotMap.SetValue("secondary0", WeaponTypePistol);
-	hWeaponSlotMap.SetValue("secondary1", WeaponTypePistol);
-	hWeaponSlotMap.SetValue("secondary2", WeaponTypePistol);
-	hWeaponSlotMap.SetValue("secondary3", WeaponTypePistol);
-	hWeaponSlotMap.SetValue("secondary4", WeaponTypePistol);
-	hWeaponSlotMap.SetValue("none", WeaponTypeOther);
-
-	hWeaponSlotMap.SetValue("item_kevlar", WeaponTypeArmor);
-	hWeaponSlotMap.SetValue("item_assaultsuit", WeaponTypeArmor);
-	hWeaponSlotMap.SetValue("item_heavyassaultsuit", WeaponTypeArmor);
-	hWeaponSlotMap.SetValue("weapon_taser", WeaponTypeTaser);
-	hWeaponSlotMap.SetValue("weapon_shield", WeaponTypeShield);
-	hWeaponSlotMap.SetValue("weapon_tagrenade", WeaponTypeGrenade);
-	hWeaponSlotMap.SetValue("weapon_breachcharge", WeaponTypeGrenade);
-	hWeaponSlotMap.SetValue("weapon_firebomb", WeaponTypeGrenade);
-	hWeaponSlotMap.SetValue("weapon_diversion", WeaponTypeGrenade);
-	hWeaponSlotMap.SetValue("weapon_frag_grenade", WeaponTypeGrenade);
-	hWeaponSlotMap.SetValue("weapon_snowball", WeaponTypeGrenade);
-	hWeaponSlotMap.SetValue("weapon_bumpmine", WeaponTypeGrenade);
-	hWeaponSlotMap.SetValue("weapon_fists", WeaponTypeKnife);
-	hWeaponSlotMap.SetValue("melee", WeaponTypeKnife);
-	hWeaponSlotMap.SetValue("melee_unusual", WeaponTypeKnife);
-	hWeaponSlotMap.SetValue("weapon_melee_prefab", WeaponTypeKnife);
-	hWeaponSlotMap.SetValue("weapon_tablet", WeaponTypeOther);
-	hWeaponSlotMap.SetValue("weapon_zone_repulsor", WeaponTypeOther);
 }
 
 stock int CSWeapons_GetWeaponInfoArrySize()
@@ -422,9 +276,7 @@ stock bool CSWeapons_GetWeaponClassname(CSWeaponID weaponID, char [] buffer, int
 	
 	if(GetWeaponInfoFromID(weaponID, info))
 	{
-		char key[10];
-		IntToString(view_as<int>(weaponID), key, sizeof(key));
-		hWeaponIDToClassname.GetString(key, buffer, size);
+		strcopy(buffer, size, cstrike_szClassnames[info[TrieWeapon_ArryIdx]]);
 		return true;
 	}
 	
@@ -474,7 +326,7 @@ stock CSWeaponID CSWeapons_GetWeaponIDFromSnapshot(int index)
 	
 	if(snap == null)
 	{
-		snap = hWeaponIDToInfoTrie.Snapshot();
+		snap = hWeaponIDToInfoTrie.SnapShot();
 	}
 	
 	char key[10];
